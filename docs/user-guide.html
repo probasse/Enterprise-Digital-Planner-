@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Planner — User Guide</title>
+    <style>
+        :root {
+            --bg-primary: #f5f7fa;
+            --bg-secondary: #ffffff;
+            --bg-tertiary: #e9ecef;
+            --text-primary: #2d3748;
+            --text-secondary: #718096;
+            --text-muted: #a0aec0;
+            --border-color: #e2e8f0;
+            --shadow-color: rgba(0,0,0,0.08);
+            --accent-primary: #4f46e5;
+            --accent-hover: #4338ca;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+        }
+        [data-theme="dark"] {
+            --bg-primary: #1a1b26;
+            --bg-secondary: #24283b;
+            --bg-tertiary: #2f3549;
+            --text-primary: #c0caf5;
+            --text-secondary: #9aa5ce;
+            --text-muted: #565f89;
+            --border-color: #3b4261;
+            --shadow-color: rgba(0,0,0,0.3);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html { scroll-behavior: smooth; font-size: 16px; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.7;
+        }
+
+        /* ── Layout ── */
+        .layout { display: flex; min-height: 100vh; }
+
+        /* ── Sidebar TOC ── */
+        .toc {
+            width: 260px;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border-color);
+            padding: 24px 0 40px;
+        }
+        .toc-header {
+            padding: 0 20px 16px;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 12px;
+        }
+        .toc-header .logo { font-size: 1.1rem; font-weight: 700; color: var(--accent-primary); }
+        .toc-header .sub  { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+        .toc nav a {
+            display: block;
+            padding: 5px 20px;
+            font-size: 0.83rem;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-left: 2px solid transparent;
+            transition: color 0.15s, border-color 0.15s, background 0.15s;
+        }
+        .toc nav a:hover { color: var(--accent-primary); background: var(--bg-tertiary); }
+        .toc nav a.active { color: var(--accent-primary); border-left-color: var(--accent-primary); font-weight: 600; }
+        .toc-section-label {
+            padding: 10px 20px 3px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        /* ── Main content ── */
+        .content {
+            flex: 1;
+            min-width: 0;
+            padding: 48px 60px;
+            max-width: 900px;
+        }
+        @media (max-width: 800px) {
+            .toc { display: none; }
+            .content { padding: 24px 20px; }
+        }
+
+        /* ── Top bar ── */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        .topbar-left { display: flex; align-items: center; gap: 12px; }
+        .topbar-title { font-weight: 700; font-size: 1rem; color: var(--accent-primary); }
+        .back-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            font-size: 0.83rem; color: var(--text-secondary);
+            text-decoration: none; padding: 5px 10px;
+            border: 1px solid var(--border-color); border-radius: 6px;
+            background: var(--bg-secondary); transition: background 0.15s;
+        }
+        .back-link:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+        .btn-theme-toggle {
+            padding: 6px 12px; border-radius: 6px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary); color: var(--text-primary);
+            cursor: pointer; font-size: 0.82rem; transition: background 0.15s;
+        }
+        .btn-theme-toggle:hover { background: var(--bg-tertiary); }
+
+        /* ── Typography ── */
+        h1 { font-size: 2rem; font-weight: 800; color: var(--text-primary); margin-bottom: 8px; }
+        h1 .subtitle { font-size: 1rem; font-weight: 400; color: var(--text-muted); display: block; margin-top: 4px; }
+        h2 {
+            font-size: 1.35rem; font-weight: 700; color: var(--text-primary);
+            margin: 48px 0 14px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--border-color);
+            scroll-margin-top: 64px;
+        }
+        h2:first-of-type { margin-top: 32px; }
+        h3 { font-size: 1.05rem; font-weight: 600; color: var(--text-primary); margin: 28px 0 10px; }
+        p { margin-bottom: 14px; color: var(--text-secondary); }
+        strong { color: var(--text-primary); }
+        ul, ol { margin: 0 0 14px 22px; color: var(--text-secondary); }
+        li { margin-bottom: 5px; }
+        code {
+            font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+            font-size: 0.85em;
+            background: var(--bg-tertiary);
+            color: var(--accent-primary);
+            padding: 1px 5px;
+            border-radius: 4px;
+        }
+        pre {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 14px 0;
+            font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+            font-size: 0.83rem;
+            line-height: 1.5;
+            color: var(--text-secondary);
+        }
+        hr { border: none; border-top: 1px solid var(--border-color); margin: 40px 0; }
+
+        /* ── Blockquote ── */
+        blockquote {
+            border-left: 3px solid var(--accent-primary);
+            background: var(--bg-secondary);
+            padding: 12px 16px;
+            border-radius: 0 8px 8px 0;
+            margin: 16px 0;
+            color: var(--text-secondary);
+            font-size: 0.92rem;
+        }
+        blockquote strong { color: var(--accent-primary); }
+        .callout-warn {
+            border-left-color: var(--warning);
+            background: #fef3c720;
+        }
+        .callout-warn strong { color: var(--warning); }
+
+        /* ── Tables ── */
+        .table-wrap { overflow-x: auto; margin: 16px 0 24px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        th {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            font-weight: 600;
+            text-align: left;
+            padding: 10px 14px;
+            border-bottom: 2px solid var(--border-color);
+        }
+        td {
+            padding: 9px 14px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            vertical-align: top;
+        }
+        tr:last-child td { border-bottom: none; }
+        tr:hover td { background: var(--bg-tertiary); }
+
+        /* ── Badges ── */
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-purple { background: #ede9fe; color: #6d28d9; }
+        .badge-blue   { background: #dbeafe; color: #1d4ed8; }
+        .badge-green  { background: #d1fae5; color: #065f46; }
+        .badge-red    { background: #fee2e2; color: #991b1b; }
+        .badge-gray   { background: #f3f4f6; color: #374151; }
+
+        /* ── Section header chips ── */
+        .section-num {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px; height: 28px;
+            border-radius: 8px;
+            background: var(--accent-primary);
+            color: #fff;
+            font-size: 0.8rem;
+            font-weight: 700;
+            margin-right: 8px;
+            flex-shrink: 0;
+        }
+        h2 { display: flex; align-items: center; }
+
+        /* ── Field list ── */
+        .field-req { color: var(--danger); font-weight: 700; font-size: 0.8rem; }
+        .field-opt { color: var(--text-muted); font-size: 0.8rem; }
+
+        /* ── Hero ── */
+        .hero {
+            background: linear-gradient(135deg, #4f46e510 0%, #06b6d410 100%);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 32px;
+            margin-bottom: 40px;
+        }
+        .hero h1 { margin-bottom: 4px; }
+        .hero p { margin: 12px 0 0; font-size: 1rem; }
+
+        /* ── Capability grid ── */
+        .cap-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 12px; margin: 20px 0 28px; }
+        .cap-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 14px 16px;
+        }
+        .cap-card .cap-icon { font-size: 1.4rem; margin-bottom: 6px; }
+        .cap-card .cap-title { font-weight: 600; font-size: 0.88rem; color: var(--text-primary); margin-bottom: 3px; }
+        .cap-card .cap-desc  { font-size: 0.78rem; color: var(--text-muted); }
+
+        /* ── Layout diagram ── */
+        .layout-diagram {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-family: 'SF Mono', Consolas, monospace;
+            font-size: 0.82rem;
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin: 16px 0;
+        }
+
+        /* ── Print ── */
+        @media print {
+            .toc, .topbar, .btn-theme-toggle, .back-link { display: none !important; }
+            .content { padding: 20px; max-width: 100%; }
+            body { font-size: 13px; }
+            h2 { page-break-before: always; }
+            h2:first-of-type { page-break-before: auto; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+    <div class="topbar-left">
+        <span class="topbar-title">🚀 Project Planner</span>
+        <span style="color:var(--text-muted);font-size:0.8rem;">User Guide</span>
+    </div>
+    <div style="display:flex;gap:10px;align-items:center;">
+        <a class="back-link" href="../index.html">← Back to App</a>
+        <button class="btn-theme-toggle" id="themeBtn">🌙 Dark Mode</button>
+    </div>
+</div>
+
+<div class="layout">
+
+    <!-- Sidebar TOC -->
+    <aside class="toc">
+        <div class="toc-header">
+            <div class="logo">📖 User Guide</div>
+            <div class="sub">Project Planner</div>
+        </div>
+        <nav id="tocNav">
+            <div class="toc-section-label">Introduction</div>
+            <a href="#overview">1. Overview</a>
+            <a href="#getting-started">2. Getting Started</a>
+            <a href="#project-management">3. Project Management</a>
+            <div class="toc-section-label">Views</div>
+            <a href="#dashboard">4. Dashboard</a>
+            <a href="#tasks">5. Tasks</a>
+            <a href="#timeline">6. Timeline</a>
+            <a href="#resources">7. Resources</a>
+            <a href="#risks">8. Risks</a>
+            <a href="#rollback">9. Rollback Plan</a>
+            <a href="#gonogo">10. Go/No-Go</a>
+            <a href="#communications">11. Communications</a>
+            <a href="#issues">12. Issues</a>
+            <a href="#decisions">13. Decisions</a>
+            <a href="#actions">14. Actions</a>
+            <a href="#reports">15. Reports</a>
+            <div class="toc-section-label">Configuration</div>
+            <a href="#settings">16. Project Settings</a>
+            <a href="#import-export">17. Import &amp; Export</a>
+            <div class="toc-section-label">Reference</div>
+            <a href="#reference">18. Reference</a>
+        </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="content">
+
+        <div class="hero">
+            <h1>Project Planner <span class="subtitle">User Guide</span></h1>
+            <p>Everything you need to plan, execute, and review a project cut-over — tasks, risks, decisions, issues, communications, rollback, and reporting in one browser-based tool.</p>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="overview"><span class="section-num">1</span>Overview</h2>
+
+        <p><strong>Project Planner</strong> is a browser-based tool for managing complex project cut-overs and migrations. All data is stored locally in your browser — no server, login, or internet connection required.</p>
+
+        <div class="cap-grid">
+            <div class="cap-card"><div class="cap-icon">📋</div><div class="cap-title">Tasks</div><div class="cap-desc">Plan with dependencies, durations, and milestones</div></div>
+            <div class="cap-card"><div class="cap-icon">⏱️</div><div class="cap-title">Actual vs Planned</div><div class="cap-desc">Track real start/end against planned dates</div></div>
+            <div class="cap-card"><div class="cap-icon">⚠️</div><div class="cap-title">Risks</div><div class="cap-desc">Log risks, mitigations, owners, and history</div></div>
+            <div class="cap-card"><div class="cap-icon">🔴</div><div class="cap-title">Issues</div><div class="cap-desc">Track issues with categories and resolution</div></div>
+            <div class="cap-card"><div class="cap-icon">🟡</div><div class="cap-title">Decisions</div><div class="cap-desc">Record context, options, and outcomes</div></div>
+            <div class="cap-card"><div class="cap-icon">🟢</div><div class="cap-title">Actions</div><div class="cap-desc">Assign action items with due dates</div></div>
+            <div class="cap-card"><div class="cap-icon">↩️</div><div class="cap-title">Rollback</div><div class="cap-desc">Document steps, triggers, and point of no return</div></div>
+            <div class="cap-card"><div class="cap-icon">🚦</div><div class="cap-title">Go/No-Go</div><div class="cap-desc">Readiness criteria across 4 categories</div></div>
+            <div class="cap-card"><div class="cap-icon">📢</div><div class="cap-title">Communications</div><div class="cap-desc">Schedule and track stakeholder notifications</div></div>
+            <div class="cap-card"><div class="cap-icon">📊</div><div class="cap-title">Reports</div><div class="cap-desc">12 report types, printable or PDF</div></div>
+            <div class="cap-card"><div class="cap-icon">🗂️</div><div class="cap-title">Multi-project</div><div class="cap-desc">Run multiple independent projects</div></div>
+            <div class="cap-card"><div class="cap-icon">📤</div><div class="cap-title">Export</div><div class="cap-desc">Full JSON backup or per-type CSV export</div></div>
+        </div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="getting-started"><span class="section-num">2</span>Getting Started</h2>
+
+        <h3>Opening the tool</h3>
+        <p>Open <code>index.html</code> in any modern browser (Chrome, Edge, Firefox, Safari). No installation is needed.</p>
+
+        <h3>First-time setup</h3>
+        <p>A blank project called <strong>My Project</strong> is created automatically on first launch.</p>
+        <p><strong>Recommended first steps:</strong></p>
+        <ol>
+            <li>Click <strong>⚙️ Settings</strong> (top-right of the header) to set your project name, cut-over date, and timezone.</li>
+            <li>Go to <strong>Resources</strong> and add your team members — this lets you assign owners when creating tasks.</li>
+            <li>Go to <strong>Tasks</strong> and start building your task list.</li>
+        </ol>
+
+        <h3>Interface layout</h3>
+        <div class="layout-diagram">
+┌──────────────────────────────────────────────────────────────────────┐
+│  ☰  🚀 Project Planner  │  [My Project ▾]  │  ⚙️  🌙  📤  📊  📥   │  ← Header
+├──────────────┬───────────────────────────────────────────────────────┤
+│  Dashboard   │                                                        │
+│  Tasks       │                                                        │
+│  Timeline    │           Main content area                            │
+│  Resources   │      (changes based on selected view)                  │
+│  Risks       │                                                        │
+│  Rollback    │                                                        │
+│  Go/No-Go    │                                                        │
+│  Comms       │                                                        │
+│  Issues      │                                                        │
+│  Decisions   │                                                        │
+│  Actions     │                                                        │
+│  Reports     │                                                        │
+│──────────────│                                                        │
+│  🌙 Theme    │                                                        │
+│  📤 Export   │                                                        │
+│  📥 Import   │                                                        │
+└──────────────┴───────────────────────────────────────────────────────┘</div>
+
+        <div class="table-wrap"><table>
+            <thead><tr><th>Element</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><strong>☰ Sidebar toggle</strong></td><td>Collapse or expand the left navigation panel. State is saved across sessions.</td></tr>
+                <tr><td><strong>Project switcher</strong></td><td>Switch between projects, or create a new one. Shows the active project name.</td></tr>
+                <tr><td><strong>⚙️ Settings</strong></td><td>Edit project name, cut-over date, timezone, task categories, and issue categories.</td></tr>
+                <tr><td><strong>🌙 Dark Mode</strong></td><td>Toggle between light and dark themes. Saved globally across all projects.</td></tr>
+                <tr><td><strong>Countdown timer</strong></td><td>Live countdown to the cut-over date/time, shown in the header.</td></tr>
+                <tr><td><strong>📤 Export JSON</strong></td><td>Download a full project backup as JSON.</td></tr>
+                <tr><td><strong>📊 Export CSV ▾</strong></td><td>Dropdown to export individual data sets as CSV.</td></tr>
+                <tr><td><strong>📥 Import</strong></td><td>Load a previously exported JSON file into the active project.</td></tr>
+                <tr><td><strong>❓ User Guide</strong></td><td>Opens this guide in a new tab.</td></tr>
+            </tbody>
+        </table></div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="project-management"><span class="section-num">3</span>Project Management</h2>
+
+        <p>Project Planner supports multiple independent projects. Each project has its own tasks, resources, risks, issues, decisions, actions, communications, rollback plan, go/no-go criteria, and settings. The <strong>theme</strong> and <strong>sidebar state</strong> are shared globally.</p>
+
+        <h3>Switching projects</h3>
+        <p>Click the <strong>project name button</strong> in the header to open the switcher dropdown. Click any project name to switch immediately — no page refresh needed.</p>
+
+        <h3>Creating a new project</h3>
+        <ol>
+            <li>Click the project name button in the header.</li>
+            <li>Click <strong>+ New Project</strong>.</li>
+            <li>Enter a project name (required), description (optional), and cut-over date (optional).</li>
+            <li>Click <strong>Save New Project</strong>.</li>
+        </ol>
+        <p>New projects start blank with default categories and statuses seeded automatically.</p>
+
+        <h3>Deleting a project</h3>
+        <p>Open <strong>⚙️ Settings</strong> and click <strong>Delete Project</strong> in the footer. Confirm to permanently delete the project and all its data. You cannot delete the only remaining project — create a replacement first.</p>
+        <blockquote>You can also delete a project from the switcher dropdown by clicking the <strong>✕</strong> next to its name.</blockquote>
+
+        <h3>Legacy data migration</h3>
+        <p>If you used the tool before multi-project support was added, your existing data is automatically migrated to a project called <strong>Migrated Project</strong> on first launch of the updated version.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="dashboard"><span class="section-num">4</span>Dashboard</h2>
+
+        <p>The Dashboard is the home screen for each project, providing an at-a-glance summary of project health.</p>
+
+        <div class="table-wrap"><table>
+            <thead><tr><th>Section</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Summary stats</strong></td><td>Total tasks, completed, in-progress, blocked, open risks, and go/no-go status</td></tr>
+                <tr><td><strong>Overall progress</strong></td><td>Completion percentage bar across all tasks</td></tr>
+                <tr><td><strong>Category progress</strong></td><td>Completion percentage per task category</td></tr>
+                <tr><td><strong>Risk levels</strong></td><td>Count of high, medium, and low risks</td></tr>
+                <tr><td><strong>Upcoming tasks</strong></td><td>Next 5 critical or high-priority tasks, sorted by start date</td></tr>
+                <tr><td><strong>Countdown</strong></td><td>Live timer to cut-over date in days, hours, minutes, seconds</td></tr>
+            </tbody>
+        </table></div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="tasks"><span class="section-num">5</span>Tasks</h2>
+
+        <p>The Tasks view is the central planning register. Each task has planned and actual dates, dependencies, status history, and more.</p>
+
+        <h3>Task fields</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Field</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Task Name</td><td><span class="field-req">Required</span></td><td>Short, descriptive name</td></tr>
+                <tr><td>Category</td><td><span class="field-req">Required</span></td><td>Groups tasks and drives colour-coding</td></tr>
+                <tr><td>Priority</td><td><span class="field-req">Required</span></td><td>critical / high / medium / low</td></tr>
+                <tr><td>Depends On</td><td><span class="field-opt">Optional</span></td><td>Predecessor tasks. Hold Ctrl/Cmd to select multiple</td></tr>
+                <tr><td>Start Date &amp; Time</td><td><span class="field-req">Required</span></td><td>Planned start, displayed in the project timezone</td></tr>
+                <tr><td>Duration</td><td><span class="field-opt">Optional</span></td><td><code>HH:MM:SS</code> — auto-calculates End Date when entered</td></tr>
+                <tr><td>End Date &amp; Time</td><td><span class="field-req">Required</span></td><td>Planned end, displayed in the project timezone</td></tr>
+                <tr><td>Assignee</td><td><span class="field-opt">Optional</span></td><td>Team member from the Resources list (inactive resources excluded)</td></tr>
+                <tr><td>Description</td><td><span class="field-opt">Optional</span></td><td>Free-text detail</td></tr>
+                <tr><td>Status</td><td><span class="field-opt">Optional</span></td><td>Not Started / In Progress / Completed / Blocked</td></tr>
+                <tr><td>Milestone</td><td><span class="field-opt">Optional</span></td><td>Marks the task as a key milestone (shown with 🔹)</td></tr>
+            </tbody>
+        </table></div>
+        <blockquote><strong>Task ID</strong> (T-001, T-002, …) is assigned automatically on save and cannot be changed.</blockquote>
+
+        <h3>Actual dates — auto-populated</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Status transition</th><th>What happens automatically</th></tr></thead>
+            <tbody>
+                <tr><td>→ <strong>In Progress</strong></td><td><strong>Actual Start</strong> is set to the current date/time. Only recorded on the first transition — never overwritten.</td></tr>
+                <tr><td>→ <strong>Completed</strong></td><td><strong>Actual End</strong> is set to the current date/time.</td></tr>
+            </tbody>
+        </table></div>
+        <p>Actual Start and Actual End appear as read-only fields in the task modal as soon as they have a value. They also update immediately in the task list row — no page refresh needed.</p>
+
+        <h3>Status history</h3>
+        <p>Every status change is recorded with a timestamp. Open any task to see the full history panel at the bottom of the modal — each status, when it was entered, and how long the task spent in that state.</p>
+
+        <h3>Dependency management</h3>
+        <p><strong>Snap to Dependency:</strong> Select one or more predecessor tasks in the <em>Depends On</em> field, then click the <strong>⛓ Snap to Dependency</strong> button. The start date is set to 1 second after the latest predecessor's end date, and the end date is recalculated if a duration is set.</p>
+        <p><strong>Recalculate Dates:</strong> The <strong>Recalculate Dates</strong> button in the Tasks toolbar re-snaps the start dates of <em>all</em> dependent tasks in topological order — useful after rescheduling predecessors.</p>
+
+        <h3>Column visibility</h3>
+        <p>Click <strong>⊞ Columns</strong> to show or hide columns. Preferences are saved per project. Available columns:</p>
+        <p><code>Task ID</code> · <code>Status</code> · <code>Task Name</code> · <code>Category</code> · <code>Priority</code> · <code>Assignee</code> · <code>Start Date</code> · <code>End Date</code> · <code>Duration</code> · <code>Dependencies</code> · <code>Actual Start</code> · <code>Actual End</code></p>
+
+        <h3>Filtering</h3>
+        <p>Use the filter bar to narrow the task list by <strong>Category</strong>, <strong>Status</strong>, <strong>Priority</strong>, and <strong>Assignee</strong>.</p>
+
+        <h3>Quick status update</h3>
+        <p>Change a task's status directly from the task list using the inline status dropdown — no modal needed. Actual dates update immediately in the row and in any open modal for that task.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="timeline"><span class="section-num">6</span>Timeline</h2>
+
+        <p>The Timeline view renders all tasks as a Gantt-style chart.</p>
+        <ul>
+            <li>Tasks appear as horizontal bars colour-coded by status.</li>
+            <li>Milestones appear as diamond markers.</li>
+            <li>Use the <strong>−</strong> and <strong>+</strong> zoom buttons to compress or expand the time axis.</li>
+            <li>Dependencies are shown visually between task bars.</li>
+        </ul>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="resources"><span class="section-num">7</span>Resources</h2>
+
+        <p>Resources are the team members who can be assigned to tasks, risks, issues, decisions, actions, communications, and rollback steps.</p>
+
+        <h3>Resource fields</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Field</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Name</td><td><span class="field-req">Required</span></td><td>Full name</td></tr>
+                <tr><td>Role</td><td><span class="field-req">Required</span></td><td>Job title or role (e.g. Technical Lead)</td></tr>
+                <tr><td>Email</td><td><span class="field-opt">Optional</span></td><td>Contact email</td></tr>
+                <tr><td>Phone</td><td><span class="field-opt">Optional</span></td><td>Contact phone number</td></tr>
+                <tr><td>Availability</td><td><span class="field-opt">Optional</span></td><td>available / partially / unavailable</td></tr>
+                <tr><td>Status</td><td><span class="field-opt">Optional</span></td><td><strong>active</strong> (default) or <strong>inactive</strong></td></tr>
+                <tr><td>Notes</td><td><span class="field-opt">Optional</span></td><td>Free-text notes</td></tr>
+            </tbody>
+        </table></div>
+
+        <h3>Active vs. inactive resources</h3>
+        <p>Setting a resource to <strong>Inactive</strong> removes them from all assignee dropdowns, preventing new assignments. Existing assignments are preserved and continue to display the resource's name. To re-enable, edit the resource and set Status back to <strong>Active</strong>.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="risks"><span class="section-num">8</span>Risks</h2>
+
+        <p>The Risk Register tracks potential threats to the project, their severity, and the mitigation actions in place.</p>
+
+        <h3>Risk fields</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Field</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Risk Description</td><td><span class="field-req">Required</span></td><td>Clear description of the risk</td></tr>
+                <tr><td>Severity</td><td><span class="field-req">Required</span></td><td>high / medium / low</td></tr>
+                <tr><td>Probability</td><td><span class="field-req">Required</span></td><td>high / medium / low</td></tr>
+                <tr><td>Impact Description</td><td><span class="field-opt">Optional</span></td><td>What would happen if the risk materialises</td></tr>
+                <tr><td>Mitigation Plan</td><td><span class="field-req">Required</span></td><td>Steps to reduce or eliminate the risk</td></tr>
+                <tr><td>Risk Owner</td><td><span class="field-opt">Optional</span></td><td>Team member responsible for monitoring</td></tr>
+                <tr><td>Status</td><td><span class="field-opt">Optional</span></td><td>open (default) / mitigated / closed</td></tr>
+            </tbody>
+        </table></div>
+
+        <p>Every status change is tracked automatically. Open a risk to view the full <strong>Status History</strong> panel. Filter the risk list by <strong>Severity</strong> and <strong>Status</strong> using the filter bar.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="rollback"><span class="section-num">9</span>Rollback Plan</h2>
+
+        <p>The Rollback Plan documents what to do if the cut-over needs to be reversed.</p>
+
+        <h3>Configuration</h3>
+        <ul>
+            <li><strong>Rollback Trigger Criteria</strong> — describe the conditions that would initiate a rollback (e.g. system unavailable, critical errors exceeding threshold).</li>
+            <li><strong>Point of No Return</strong> — the date and time after which rollback is no longer feasible. Displayed prominently in the Rollback Plan report.</li>
+        </ul>
+
+        <h3>Rollback steps</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Field</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Step Order</td><td><span class="field-req">Required</span></td><td>Sequence number — steps are sorted automatically</td></tr>
+                <tr><td>Step Title</td><td><span class="field-req">Required</span></td><td>Short name for the step</td></tr>
+                <tr><td>Description</td><td><span class="field-req">Required</span></td><td>Detailed instructions</td></tr>
+                <tr><td>Responsible Person</td><td><span class="field-opt">Optional</span></td><td>Team member executing the step</td></tr>
+                <tr><td>Estimated Duration</td><td><span class="field-opt">Optional</span></td><td>Duration in minutes</td></tr>
+                <tr><td>Additional Notes</td><td><span class="field-opt">Optional</span></td><td>Caveats or conditional instructions</td></tr>
+            </tbody>
+        </table></div>
+        <p>The total estimated rollback duration is calculated automatically from all step durations.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="gonogo"><span class="section-num">10</span>Go/No-Go</h2>
+
+        <p>The Go/No-Go view manages the readiness checklist used to make the final decision to proceed (or not) with the cut-over.</p>
+
+        <h3>Categories</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Category</th><th>Purpose</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Technical Readiness</strong></td><td>Systems, infrastructure, integrations</td></tr>
+                <tr><td><strong>Business Readiness</strong></td><td>Process, data, sign-offs</td></tr>
+                <tr><td><strong>Operational Readiness</strong></td><td>Support, monitoring, runbook</td></tr>
+                <tr><td><strong>Resource Readiness</strong></td><td>Team availability, on-call rosters</td></tr>
+            </tbody>
+        </table></div>
+
+        <h3>Criterion statuses</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Button</th><th>Status</th><th>Meaning</th></tr></thead>
+            <tbody>
+                <tr><td>✅</td><td><strong>GO</strong></td><td>Criterion is met</td></tr>
+                <tr><td>❌</td><td><strong>NO-GO</strong></td><td>Criterion is not met — blocks go-live</td></tr>
+                <tr><td>⏳</td><td><strong>PENDING</strong></td><td>Not yet assessed</td></tr>
+            </tbody>
+        </table></div>
+
+        <h3>Overall decision logic</h3>
+        <ul>
+            <li>If <strong>any</strong> criterion is <strong>NO-GO</strong> → overall is <strong>NO-GO</strong></li>
+            <li>Else if <strong>any</strong> criterion is <strong>PENDING</strong> → overall is <strong>PENDING</strong></li>
+            <li>Else all are <strong>GO</strong> → overall is <strong>GO</strong></li>
+        </ul>
+        <p>Click <strong>Finalize Decision</strong> to lock the decision with a timestamp. The decision and timestamp appear in the Go/No-Go report.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="communications"><span class="section-num">11</span>Communications</h2>
+
+        <p>Plan and track all stakeholder notifications before, during, and after the cut-over.</p>
+
+        <h3>Communication fields</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Field</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Timing</td><td><span class="field-req">Required</span></td><td>Date and time the communication should go out</td></tr>
+                <tr><td>Audience</td><td><span class="field-req">Required</span></td><td>Target recipients (e.g. "All staff", "IT team")</td></tr>
+                <tr><td>Message Type</td><td><span class="field-req">Required</span></td><td>announcement / reminder / status-update / go-live / issue-alert / completion</td></tr>
+                <tr><td>Channel</td><td><span class="field-req">Required</span></td><td>email / slack / teams / sms / phone / meeting</td></tr>
+                <tr><td>Owner</td><td><span class="field-opt">Optional</span></td><td>Person responsible for sending it</td></tr>
+                <tr><td>Message Template</td><td><span class="field-opt">Optional</span></td><td>Draft message content</td></tr>
+                <tr><td>Status</td><td><span class="field-opt">Optional</span></td><td>pending (default) / sent / cancelled</td></tr>
+            </tbody>
+        </table></div>
+        <p>Click the <strong>📤</strong> icon on a row to instantly mark a communication as <strong>sent</strong>. If a template exists, a <strong>View</strong> button appears to preview it.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="issues"><span class="section-num">12</span>Issues</h2>
+
+        <p>The Issues tracker captures problems that have <em>already occurred</em>. Unlike risks (potential problems), issues are confirmed and need resolution.</p>
+
+        <h3>Issue fields</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Field</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Title</td><td><span class="field-req">Required</span></td><td>Short description</td></tr>
+                <tr><td>Description</td><td><span class="field-opt">Optional</span></td><td>Detailed description</td></tr>
+                <tr><td>Category</td><td><span class="field-req">Required</span></td><td>Drawn from configurable Issue Categories (see Settings)</td></tr>
+                <tr><td>Priority</td><td><span class="field-req">Required</span></td><td>critical / high / medium / low</td></tr>
+                <tr><td>Status</td><td><span class="field-req">Required</span></td><td>open / in-progress / blocked / resolved / closed</td></tr>
+                <tr><td>Owner</td><td><span class="field-opt">Optional</span></td><td>Team member responsible for resolving</td></tr>
+                <tr><td>Resolution</td><td><span class="field-opt">Optional</span></td><td>How the issue was resolved — fill in when closing</td></tr>
+            </tbody>
+        </table></div>
+        <blockquote>Issue IDs (I-001, I-002, …) are assigned automatically on save.</blockquote>
+        <p>All status changes are recorded. The <strong>Time in Status</strong> column shows how long the issue has been in its current state. Blocked issues are highlighted in red. Filter by <strong>Status</strong>, <strong>Priority</strong>, and <strong>Category</strong>.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="decisions"><span class="section-num">13</span>Decisions</h2>
+
+        <p>The Decision Log records key project decisions — what was decided, by whom, why, and what alternatives were considered.</p>
+
+        <h3>Decision fields</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Field</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Title</td><td><span class="field-req">Required</span></td><td>Short description of the decision</td></tr>
+                <tr><td>Description/Context</td><td><span class="field-opt">Optional</span></td><td>Background information</td></tr>
+                <tr><td>Options Considered</td><td><span class="field-opt">Optional</span></td><td>Alternatives that were evaluated</td></tr>
+                <tr><td>Decision Made</td><td><span class="field-opt">Optional</span></td><td>What was actually decided</td></tr>
+                <tr><td>Status</td><td><span class="field-req">Required</span></td><td>pending / approved / rejected / deferred</td></tr>
+                <tr><td>Decided By</td><td><span class="field-opt">Optional</span></td><td>Resource who made or authorised the decision</td></tr>
+                <tr><td>Impact</td><td><span class="field-opt">Optional</span></td><td>Downstream effects of the decision</td></tr>
+            </tbody>
+        </table></div>
+        <blockquote>Decision IDs (D-001, D-002, …) are assigned automatically on save.</blockquote>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="actions"><span class="section-num">14</span>Actions</h2>
+
+        <p>Actions are discrete work items that need completing, typically arising from issues, decisions, or risks.</p>
+
+        <h3>Action fields</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Field</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Title</td><td><span class="field-req">Required</span></td><td>Short description</td></tr>
+                <tr><td>Description</td><td><span class="field-opt">Optional</span></td><td>Detailed description</td></tr>
+                <tr><td>Priority</td><td><span class="field-req">Required</span></td><td>critical / high / medium / low</td></tr>
+                <tr><td>Status</td><td><span class="field-req">Required</span></td><td>open / in-progress / completed</td></tr>
+                <tr><td>Owner</td><td><span class="field-opt">Optional</span></td><td>Team member responsible</td></tr>
+                <tr><td>Due Date</td><td><span class="field-opt">Optional</span></td><td>Completion deadline</td></tr>
+                <tr><td>Linked Item</td><td><span class="field-opt">Optional</span></td><td>Reference to a related task, issue, or risk (e.g. <code>T-010</code>, <code>I-003</code>)</td></tr>
+                <tr><td>Notes</td><td><span class="field-opt">Optional</span></td><td>Additional context</td></tr>
+            </tbody>
+        </table></div>
+        <blockquote>Action IDs (A-001, A-002, …) are assigned automatically on save.</blockquote>
+        <p>Overdue open/in-progress actions are highlighted in the table. Filter by <strong>Status</strong> and <strong>Priority</strong>.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="reports"><span class="section-num">15</span>Reports</h2>
+
+        <p>The Reports view provides 12 printable report types generated from live project data.</p>
+
+        <div class="table-wrap"><table>
+            <thead><tr><th>Report</th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Cut-Over Task List</strong></td><td>Printable checklist of all tasks grouped by category, with completion checkboxes</td></tr>
+                <tr><td><strong>Timeline Report</strong></td><td>Key dates, milestones table, and full task schedule</td></tr>
+                <tr><td><strong>Resource Assignment Matrix</strong></td><td>Team members with contact details and their assigned tasks</td></tr>
+                <tr><td><strong>Go/No-Go Checklist</strong></td><td>Full readiness criteria by category with the overall decision</td></tr>
+                <tr><td><strong>Rollback Plan</strong></td><td>Trigger criteria, point of no return, and ordered rollback steps with total time</td></tr>
+                <tr><td><strong>Risk Assessment</strong></td><td>Full risk register with descriptions, mitigations, owners, and status</td></tr>
+                <tr><td><strong>Communication Plan</strong></td><td>All scheduled communications sorted chronologically</td></tr>
+                <tr><td><strong>Issues Register</strong></td><td>All issues with status, owner, and resolution notes</td></tr>
+                <tr><td><strong>Decision Log</strong></td><td>All decisions with context, options, outcome, and approvals</td></tr>
+                <tr><td><strong>Actions Register</strong></td><td>All actions with priority, owner, due date, and linked items</td></tr>
+                <tr><td><strong>Status Dashboard</strong></td><td>Executive summary of task completion, risks, go/no-go status, and key dates</td></tr>
+                <tr><td><strong>Task Performance Report</strong></td><td>Actual vs planned start, end, and duration for every task</td></tr>
+            </tbody>
+        </table></div>
+
+        <h3>Task Performance Report</h3>
+        <p>Designed for post-cut-over review. For each task it shows:</p>
+        <ul>
+            <li>Planned Start / Actual Start with <strong>start variance</strong></li>
+            <li>Planned End / Actual End with <strong>end variance</strong></li>
+            <li>Planned Duration / Actual Duration with <strong>duration variance</strong></li>
+            <li>Summary: tasks started, completed, finished early, on time, late</li>
+            <li>Average planned duration vs average actual duration</li>
+        </ul>
+        <p>Variances are colour-coded: <strong style="color:var(--success)">green</strong> for early/on-time, <strong style="color:var(--danger)">red</strong> for late.</p>
+
+        <h3>Printing and PDF export</h3>
+        <p>Click <strong>🖨️ Print Report</strong> in the report modal footer. In the browser print dialog, select <strong>Save as PDF</strong> as the destination to produce a PDF file.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="settings"><span class="section-num">16</span>Project Settings</h2>
+
+        <p>Open Settings by clicking the <strong>⚙️</strong> button in the header.</p>
+
+        <h3>Project information</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Field</th><th></th><th>Description</th></tr></thead>
+            <tbody>
+                <tr><td>Project Name</td><td><span class="field-req">Required</span></td><td>Shown in the header and all reports</td></tr>
+                <tr><td>Cut-Over Date &amp; Time</td><td><span class="field-req">Required</span></td><td>Drives the countdown timer and timeline</td></tr>
+                <tr><td>Timezone</td><td><span class="field-req">Required</span></td><td>All dates and times across the tool use this timezone</td></tr>
+                <tr><td>Project Description</td><td><span class="field-opt">Optional</span></td><td>Free-text description</td></tr>
+            </tbody>
+        </table></div>
+
+        <h3>Task categories</h3>
+        <p>Categories group tasks and provide colour-coded badges in all views and reports.</p>
+        <ul>
+            <li><strong>Add</strong> — type a name, pick a colour, click <strong>+ Add</strong></li>
+            <li><strong>Rename</strong> — click the name field; saved when you click away</li>
+            <li><strong>Recolour</strong> — click the colour swatch; saved automatically</li>
+            <li><strong>Delete</strong> — click 🗑️ (tasks referencing the old slug are unaffected)</li>
+        </ul>
+        <p>Default task categories: <span class="badge badge-purple">Pre-Cutover</span> <span class="badge badge-blue">During Cutover</span> <span class="badge badge-green">Post-Cutover</span> <span class="badge badge-blue">Validation</span></p>
+
+        <h3>Issue categories</h3>
+        <p>Issue categories work identically to task categories but apply only to the Issues view and Issues report. They are configured separately so issue types can differ from task types.</p>
+        <p>Default issue categories: <span class="badge badge-purple">Technical</span> <span class="badge badge-blue">Data</span> <span class="badge badge-blue">Integration</span> <span class="badge badge-red">Security</span> <span class="badge badge-green">Operational</span> <span class="badge badge-gray">Resource</span> <span class="badge badge-gray">Other</span></p>
+
+        <h3>Danger zone</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Button</th><th>Action</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Reset All Data</strong></td><td>Clears all data for the current project and re-seeds defaults. Requires confirmation.</td></tr>
+                <tr><td><strong>Delete Project</strong></td><td>Permanently deletes the project and all its data. Requires confirmation. Cannot be used if it is the only project.</td></tr>
+            </tbody>
+        </table></div>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="import-export"><span class="section-num">17</span>Data Import &amp; Export</h2>
+
+        <h3>Export to JSON</h3>
+        <p>Click <strong>📤 Export JSON</strong> in the sidebar footer. Downloads a full snapshot of the active project. Filename: <code>[project-name]-[YYYY-MM-DD].json</code>.</p>
+        <p>Use this to back up a project, share it with another user, or archive a completed project.</p>
+
+        <h3>Import from JSON</h3>
+        <p>Click <strong>📥 Import</strong> and select a previously exported <code>.json</code> file. The import:</p>
+        <ul>
+            <li>Loads all data into the currently active project</li>
+            <li>Backfills missing task numbers sequentially</li>
+            <li>Re-snaps dependent task start dates to dependency end + 1 second</li>
+            <li>Auto-calculates missing durations from start/end dates</li>
+            <li>Updates the project name in the registry</li>
+        </ul>
+        <blockquote class="callout-warn"><strong>Warning:</strong> Import overwrites the current project's data. Export a backup first if you need to keep it.</blockquote>
+
+        <h3>Export to CSV</h3>
+        <p>Click <strong>📊 Export CSV ▾</strong> and choose a data type from the dropdown.</p>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Option</th><th>Columns exported</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Tasks</strong></td><td>Task ID, Name, Category, Priority, Status, Assignee, Planned Start/End, Planned Duration, Actual Start/End, Actual Duration, Milestone, Description, Dependencies</td></tr>
+                <tr><td><strong>Resources</strong></td><td>Name, Role, Email, Phone, Availability, Status, Notes, Assigned Tasks</td></tr>
+                <tr><td><strong>Risks</strong></td><td>ID, Description, Severity, Probability, Impact, Mitigation, Owner, Status, Created</td></tr>
+                <tr><td><strong>Issues</strong></td><td>ID, Title, Category, Priority, Status, Owner, Raised Date, Due Date, Resolution, Description</td></tr>
+                <tr><td><strong>Decisions</strong></td><td>ID, Title, Status, Decided By, Impact, Options, Outcome, Created Date, Decided Date, Description</td></tr>
+                <tr><td><strong>Actions</strong></td><td>ID, Title, Priority, Status, Owner, Due Date, Linked Item, Notes, Description</td></tr>
+                <tr><td><strong>Communications</strong></td><td>Timing, Audience, Type, Channel, Owner, Status, Template/Message</td></tr>
+            </tbody>
+        </table></div>
+        <p>Files are UTF-8 encoded with a BOM for correct display in Microsoft Excel. Filename: <code>[project-name]-[type]-[YYYY-MM-DD].csv</code>.</p>
+
+        <!-- ══════════════════════════════════════════ -->
+        <h2 id="reference"><span class="section-num">18</span>Reference</h2>
+
+        <h3>Task statuses</h3>
+        <p>Task statuses are fixed and cannot be configured.</p>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Not Started</strong></td><td>Work has not begun</td></tr>
+                <tr><td><strong>In Progress</strong></td><td>Work is underway — sets Actual Start automatically on first transition</td></tr>
+                <tr><td><strong>Completed</strong></td><td>Work is done — sets Actual End automatically</td></tr>
+                <tr><td><strong>Blocked</strong></td><td>Work cannot proceed due to a dependency or issue</td></tr>
+            </tbody>
+        </table></div>
+
+        <h3>Priority levels</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Level</th><th>Use for</th></tr></thead>
+            <tbody>
+                <tr><td><strong>Critical</strong></td><td>Must not slip — cut-over depends on it</td></tr>
+                <tr><td><strong>High</strong></td><td>Important, limited tolerance for delay</td></tr>
+                <tr><td><strong>Medium</strong></td><td>Standard tasks</td></tr>
+                <tr><td><strong>Low</strong></td><td>Nice-to-have or buffer tasks</td></tr>
+            </tbody>
+        </table></div>
+
+        <h3>Date &amp; time format</h3>
+        <p>All dates and times are displayed in the project timezone in <strong>24-hour format</strong>: <code>DD/MM/YYYY HH:MM:SS</code></p>
+
+        <h3>Duration format</h3>
+        <p>Durations are entered and displayed as <code>HH:MM:SS</code>. Example: <code>02:30:00</code> = 2 hours 30 minutes.</p>
+
+        <h3>ID formats</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Type</th><th>Format</th><th>Example</th></tr></thead>
+            <tbody>
+                <tr><td>Task</td><td><code>T-NNN</code></td><td>T-001</td></tr>
+                <tr><td>Issue</td><td><code>I-NNN</code></td><td>I-007</td></tr>
+                <tr><td>Decision</td><td><code>D-NNN</code></td><td>D-003</td></tr>
+                <tr><td>Action</td><td><code>A-NNN</code></td><td>A-012</td></tr>
+                <tr><td>Risk</td><td><code>R-NNN</code></td><td>R-002</td></tr>
+            </tbody>
+        </table></div>
+
+        <h3>Data storage</h3>
+        <p>All data is stored in your browser's <code>localStorage</code>. It is <strong>not</strong> synced to a server or shared with other browsers or users. To transfer data between machines, use <strong>Export JSON</strong> and <strong>Import</strong>.</p>
+        <blockquote class="callout-warn"><strong>Warning:</strong> Clearing your browser's site data will permanently delete all projects. Export regularly to keep backups.</blockquote>
+
+        <h3>Keyboard shortcuts</h3>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Action</th><th>Shortcut</th></tr></thead>
+            <tbody>
+                <tr><td>Multi-select task dependencies</td><td>Hold <code>Ctrl</code> (Windows/Linux) or <code>Cmd</code> (Mac) while clicking</td></tr>
+                <tr><td>Close any modal</td><td>Click <strong>Cancel</strong> or <strong>✕</strong></td></tr>
+            </tbody>
+        </table></div>
+
+        <hr>
+        <p style="text-align:center;color:var(--text-muted);font-size:0.82rem;">Project Planner — User Guide</p>
+    </main>
+</div>
+
+<script>
+    // Theme toggle
+    const themeBtn = document.getElementById('themeBtn');
+    const saved = localStorage.getItem('cutover_theme');
+    if (saved === 'dark') { document.documentElement.setAttribute('data-theme','dark'); themeBtn.textContent = '☀️ Light Mode'; }
+    themeBtn.addEventListener('click', () => {
+        const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        document.documentElement.setAttribute('data-theme', isDark ? '' : 'dark');
+        themeBtn.textContent = isDark ? '🌙 Dark Mode' : '☀️ Light Mode';
+        localStorage.setItem('cutover_theme', isDark ? 'light' : 'dark');
+    });
+
+    // Active TOC link on scroll
+    const headings = document.querySelectorAll('h2[id]');
+    const links    = document.querySelectorAll('#tocNav a');
+    const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                links.forEach(l => l.classList.remove('active'));
+                const active = document.querySelector(`#tocNav a[href="#${entry.target.id}"]`);
+                if (active) active.classList.add('active');
+            }
+        });
+    }, { rootMargin: '-10% 0px -80% 0px' });
+    headings.forEach(h => observer.observe(h));
+</script>
+</body>
+</html>

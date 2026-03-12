@@ -1,0 +1,1380 @@
+{
+  "exportDate": "2026-03-12T00:00:00.000Z",
+  "version": "1.0",
+  "project": {
+    "name": "S/4HANA RISE Migration – P01",
+    "description": "RISE with SAP migration to S/4HANA Cloud Private Edition for system P01. Covers technical system migration, data validation, cutover execution and hypercare.",
+    "cutoverDate": "2026-04-26T22:00:00.000Z",
+    "createdAt": "2026-03-12T00:00:00.000Z"
+  },
+  "resources": [
+    {
+      "id": "r_cutover_mgr",
+      "name": "Anna Müller",
+      "role": "Cutover Manager",
+      "email": "anna.mueller@company.com",
+      "phone": "+49-160-1234501",
+      "availability": "available",
+      "notes": "Overall cutover coordinator. Final go/no-go authority."
+    },
+    {
+      "id": "r_basis_lead",
+      "name": "Raj Patel",
+      "role": "SAP Basis Lead",
+      "email": "raj.patel@company.com",
+      "phone": "+49-160-1234502",
+      "availability": "available",
+      "notes": "Responsible for system copy, kernel upgrades and technical readiness of P01."
+    },
+    {
+      "id": "r_abap_lead",
+      "name": "Sophie Schneider",
+      "role": "ABAP/Development Lead",
+      "email": "sophie.schneider@company.com",
+      "phone": "+49-160-1234503",
+      "availability": "available",
+      "notes": "Manages transport landscape and custom code remediation."
+    },
+    {
+      "id": "r_func_lead",
+      "name": "Carlos Rivera",
+      "role": "Functional Lead (FI/CO/MM/SD)",
+      "email": "carlos.rivera@company.com",
+      "phone": "+49-160-1234504",
+      "availability": "available",
+      "notes": "Business process validation across core modules."
+    },
+    {
+      "id": "r_data_mgr",
+      "name": "Lisa Wang",
+      "role": "Data Migration Manager",
+      "email": "lisa.wang@company.com",
+      "phone": "+49-160-1234505",
+      "availability": "available",
+      "notes": "Owns open item migration, balance carry-forward and data reconciliation."
+    },
+    {
+      "id": "r_infra",
+      "name": "Tom Fischer",
+      "role": "Cloud Infrastructure Engineer",
+      "email": "tom.fischer@company.com",
+      "phone": "+49-160-1234506",
+      "availability": "available",
+      "notes": "SAP BTP / RISE infrastructure, network routing and system connectivity."
+    },
+    {
+      "id": "r_security",
+      "name": "Priya Nair",
+      "role": "Security & Authorizations Lead",
+      "email": "priya.nair@company.com",
+      "phone": "+49-160-1234507",
+      "availability": "available",
+      "notes": "Role migration, SU01 profiles and SOD checks."
+    },
+    {
+      "id": "r_testing",
+      "name": "James O'Brien",
+      "role": "QA / Testing Lead",
+      "email": "james.obrien@company.com",
+      "phone": "+49-160-1234508",
+      "availability": "available",
+      "notes": "Smoke tests, integration tests and UAT sign-off coordination."
+    },
+    {
+      "id": "r_pm",
+      "name": "Elena Kozlov",
+      "role": "Project Manager",
+      "email": "elena.kozlov@company.com",
+      "phone": "+49-160-1234509",
+      "availability": "available",
+      "notes": "Stakeholder communication, escalation management and steering committee."
+    },
+    {
+      "id": "r_sap_coe",
+      "name": "SAP CoE / RISE Support",
+      "role": "SAP Cloud Operations",
+      "email": "rise-support@sap.com",
+      "phone": "+1-800-872-1727",
+      "availability": "available",
+      "notes": "SAP RISE managed service team. Engage via SAP for Me ticket for cutover weekend support."
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat_pre",
+      "name": "Pre-Cutover",
+      "color": "#7c3aed",
+      "value": "pre-cutover"
+    },
+    {
+      "id": "cat_during",
+      "name": "During Cutover",
+      "color": "#ea580c",
+      "value": "during-cutover"
+    },
+    {
+      "id": "cat_post",
+      "name": "Post-Cutover",
+      "color": "#16a34a",
+      "value": "post-cutover"
+    },
+    {
+      "id": "cat_validate",
+      "name": "Validation",
+      "color": "#0891b2",
+      "value": "validation"
+    }
+  ],
+  "statuses": [
+    {
+      "id": "st_ns",
+      "name": "Not Started",
+      "color": "#6b7280",
+      "value": "not-started"
+    },
+    {
+      "id": "st_ip",
+      "name": "In Progress",
+      "color": "#2563eb",
+      "value": "in-progress"
+    },
+    {
+      "id": "st_done",
+      "name": "Completed",
+      "color": "#16a34a",
+      "value": "completed"
+    },
+    {
+      "id": "st_blk",
+      "name": "Blocked",
+      "color": "#dc2626",
+      "value": "blocked"
+    }
+  ],
+  "tasks": [
+    {
+      "id": "t01",
+      "name": "Freeze business configuration (P01 config lock)",
+      "category": "pre-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_func_lead",
+      "startDate": "2026-04-06T06:00:00.000Z",
+      "endDate": "2026-04-06T10:00:00.000Z",
+      "dependencies": [],
+      "milestone": true,
+      "description": "Lock all business configuration changes in P01. No config transports allowed after this point. Confirm with all functional streams.",
+      "taskNumber": "T-001"
+    },
+    {
+      "id": "t02",
+      "name": "Final custom code remediation sign-off (ATC / ABAP Cloud)",
+      "category": "pre-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_abap_lead",
+      "startDate": "2026-04-06T06:00:00.000Z",
+      "endDate": "2026-04-10T18:00:00.000Z",
+      "dependencies": [],
+      "milestone": false,
+      "description": "All custom code must pass ABAP Test Cockpit (ATC) checks with zero priority-1 findings. Confirm ABAP Cloud API whitelist compliance.",
+      "taskNumber": "T-002"
+    },
+    {
+      "id": "t03",
+      "name": "Complete open item migration dry-run reconciliation",
+      "category": "pre-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_data_mgr",
+      "startDate": "2026-04-07T06:00:00.000Z",
+      "endDate": "2026-04-11T18:00:00.000Z",
+      "dependencies": [],
+      "milestone": false,
+      "description": "Final dry-run of open AR/AP items, asset migration and GL balance carry-forward. Variance < 0.01% required.",
+      "taskNumber": "T-003"
+    },
+    {
+      "id": "t04",
+      "name": "Transport landscape final cleanup and release",
+      "category": "pre-cutover",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_abap_lead",
+      "startDate": "2026-04-13T06:00:00.000Z",
+      "endDate": "2026-04-18T18:00:00.000Z",
+      "dependencies": [
+        "t01"
+      ],
+      "milestone": false,
+      "description": "Release and import all outstanding transports into P01 before system copy. Confirm TMS queue is empty.",
+      "taskNumber": "T-004"
+    },
+    {
+      "id": "t05",
+      "name": "Confirm RISE infrastructure provisioned and network routing validated",
+      "category": "pre-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_infra",
+      "startDate": "2026-04-13T06:00:00.000Z",
+      "endDate": "2026-04-17T18:00:00.000Z",
+      "dependencies": [],
+      "milestone": false,
+      "description": "Validate RISE Cloud Private Edition tenant for P01 is fully provisioned. Check VPN/Private Link, DNS resolution and RFC connectivity from on-premise systems.",
+      "taskNumber": "T-005"
+    },
+    {
+      "id": "t06",
+      "name": "Final UAT sign-off (all business streams)",
+      "category": "pre-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_testing",
+      "startDate": "2026-04-14T06:00:00.000Z",
+      "endDate": "2026-04-22T18:00:00.000Z",
+      "dependencies": [],
+      "milestone": true,
+      "description": "All functional streams (FI, CO, MM, SD, PP, WM) must sign off UAT in the pre-production RISE environment. No open defects of priority 1 or 2 may remain.",
+      "taskNumber": "T-006"
+    },
+    {
+      "id": "t07",
+      "name": "Authorizations final migration and SOD check",
+      "category": "pre-cutover",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_security",
+      "startDate": "2026-04-14T06:00:00.000Z",
+      "endDate": "2026-04-22T18:00:00.000Z",
+      "dependencies": [],
+      "milestone": false,
+      "description": "Migrate role assignments to S/4HANA Fiori authorization model. Run SOD analysis via SAP GRC / IAG and resolve critical conflicts.",
+      "taskNumber": "T-007"
+    },
+    {
+      "id": "t08",
+      "name": "Run SUM (Software Update Manager) / DMO readiness check on source system",
+      "category": "pre-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-14T06:00:00.000Z",
+      "endDate": "2026-04-16T18:00:00.000Z",
+      "dependencies": [],
+      "milestone": false,
+      "description": "Execute SUM pre-checks and DMO (Database Migration Option) readiness report on source ECC/S4 system. Address all blocker findings.",
+      "taskNumber": "T-008"
+    },
+    {
+      "id": "t09",
+      "name": "Send T-minus 1 week user communication",
+      "category": "pre-cutover",
+      "priority": "medium",
+      "status": "not-started",
+      "assignee": "r_pm",
+      "startDate": "2026-04-19T06:00:00.000Z",
+      "endDate": "2026-04-19T12:00:00.000Z",
+      "dependencies": [],
+      "milestone": false,
+      "description": "Notify all SAP users of upcoming maintenance window, system downtime start/end times and support contacts.",
+      "taskNumber": "T-009"
+    },
+    {
+      "id": "t10",
+      "name": "Final go/no-go steering committee meeting",
+      "category": "pre-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_pm",
+      "startDate": "2026-04-24T12:00:00.000Z",
+      "endDate": "2026-04-24T14:00:00.000Z",
+      "dependencies": [
+        "t06",
+        "t07",
+        "t08"
+      ],
+      "milestone": true,
+      "description": "Formal go/no-go decision with business and IT steering committee. All checklist items must be GREEN.",
+      "taskNumber": "T-010"
+    },
+    {
+      "id": "t11",
+      "name": "Engage SAP RISE support team – open cutover support ticket",
+      "category": "pre-cutover",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_sap_coe",
+      "startDate": "2026-04-24T14:00:01.000Z",
+      "endDate": "2026-04-24T16:00:01.000Z",
+      "dependencies": [
+        "t10"
+      ],
+      "milestone": false,
+      "description": "Open priority SAP for Me incident to engage SAP Cloud Operations for cutover weekend standby. Share cutover runbook.",
+      "taskNumber": "T-011"
+    },
+    {
+      "id": "t12",
+      "name": "Send T-minus 24h final downtime reminder to all users",
+      "category": "pre-cutover",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_pm",
+      "startDate": "2026-04-25T08:00:01.000Z",
+      "endDate": "2026-04-25T10:00:01.000Z",
+      "dependencies": [
+        "t10"
+      ],
+      "milestone": false,
+      "description": "Final reminder email and helpdesk article. Include system URL change, new Fiori Launchpad URL and password reset procedure.",
+      "taskNumber": "T-012"
+    },
+    {
+      "id": "t13",
+      "name": "Close P01 to all business users (logon restriction)",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-26T20:00:00.000Z",
+      "endDate": "2026-04-26T20:30:00.000Z",
+      "dependencies": [
+        "t12"
+      ],
+      "milestone": true,
+      "description": "Set system logon group restrictions. Only BASIS and cutover team users may log on. Use SM01 / profile parameter login/disable_password_logon.",
+      "taskNumber": "T-013"
+    },
+    {
+      "id": "t14",
+      "name": "Take final consistent backup of source P01 database",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-26T20:30:01.000Z",
+      "endDate": "2026-04-26T22:30:01.000Z",
+      "dependencies": [
+        "t13"
+      ],
+      "milestone": false,
+      "description": "Full online backup via BRBACKUP (Oracle) or HANA native backup. Verify backup catalog. This is the rollback restore point.",
+      "taskNumber": "T-014"
+    },
+    {
+      "id": "t15",
+      "name": "Freeze and export open financial posting periods",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_func_lead",
+      "startDate": "2026-04-26T20:30:01.000Z",
+      "endDate": "2026-04-26T21:30:01.000Z",
+      "dependencies": [
+        "t13"
+      ],
+      "milestone": false,
+      "description": "Close all open FI/CO posting periods in source system. Extract open item list for reconciliation. Run F.07 and F101.",
+      "taskNumber": "T-015"
+    },
+    {
+      "id": "t16",
+      "name": "Start SUM / DMO migration execution on P01",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-26T22:00:00.000Z",
+      "endDate": "2026-04-27T10:00:00.000Z",
+      "dependencies": [
+        "t14",
+        "t15"
+      ],
+      "milestone": true,
+      "description": "Execute SUM with DMO option to migrate and upgrade the database to SAP HANA and the application to S/4HANA 2023. Monitor progress via SUM UI.",
+      "taskNumber": "T-016"
+    },
+    {
+      "id": "t17",
+      "name": "Run post-SUM system checks (SM21, ST22, ABAP dumps)",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-27T10:00:01.000Z",
+      "endDate": "2026-04-27T12:00:01.000Z",
+      "dependencies": [
+        "t16"
+      ],
+      "milestone": false,
+      "description": "Check SM21 syslog, ST22 ABAP dumps, SM50 process overview. Verify all application servers started. No red alerts in CCMS / SAP Solution Manager.",
+      "taskNumber": "T-017"
+    },
+    {
+      "id": "t18",
+      "name": "Apply S/4HANA post-migration kernel and support package patches",
+      "category": "during-cutover",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-27T12:00:02.000Z",
+      "endDate": "2026-04-27T14:00:02.000Z",
+      "dependencies": [
+        "t17"
+      ],
+      "milestone": false,
+      "description": "Apply latest kernel patch and any mandatory S/4HANA notes (via SNOTE) identified during pre-checks. Restart system after patch.",
+      "taskNumber": "T-018"
+    },
+    {
+      "id": "t19",
+      "name": "Import cutover transports (final config + custom code) to P01",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_abap_lead",
+      "startDate": "2026-04-27T14:00:03.000Z",
+      "endDate": "2026-04-27T16:00:03.000Z",
+      "dependencies": [
+        "t18"
+      ],
+      "milestone": false,
+      "description": "Import the pre-approved cutover transport queue in sequence. Verify each transport with RC 0 or 4. No RC 8 or higher accepted.",
+      "taskNumber": "T-019"
+    },
+    {
+      "id": "t20",
+      "name": "Execute open item migration programs (FAGL_FCV, migration cockpit)",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_data_mgr",
+      "startDate": "2026-04-27T16:00:04.000Z",
+      "endDate": "2026-04-27T20:00:04.000Z",
+      "dependencies": [
+        "t19"
+      ],
+      "milestone": false,
+      "description": "Run S/4HANA data migration cockpit programs for open AR/AP, asset migration, GL balances and open purchase orders. Document record counts.",
+      "taskNumber": "T-020"
+    },
+    {
+      "id": "t21",
+      "name": "Fiori Launchpad configuration and role assignment",
+      "category": "during-cutover",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_security",
+      "startDate": "2026-04-27T16:00:04.000Z",
+      "endDate": "2026-04-27T20:00:04.000Z",
+      "dependencies": [
+        "t19"
+      ],
+      "milestone": false,
+      "description": "Configure Fiori Launchpad groups and tile catalogs. Assign business roles to users. Validate SSO integration via SAP Cloud Identity Services (IAS/IPS).",
+      "taskNumber": "T-021"
+    },
+    {
+      "id": "t22",
+      "name": "Switch DNS / load balancer to new RISE P01 endpoint",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_infra",
+      "startDate": "2026-04-27T20:00:00.000Z",
+      "endDate": "2026-04-27T20:30:00.000Z",
+      "dependencies": [
+        "t20",
+        "t21"
+      ],
+      "milestone": true,
+      "description": "Update DNS CNAME / A-record and load balancer pool to point SAP system hostname to new RISE Cloud Private Edition endpoints. Verify from multiple network zones.",
+      "taskNumber": "T-022"
+    },
+    {
+      "id": "t23",
+      "name": "Update RFC destinations and PI/PO / BTP integration endpoints",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_infra",
+      "startDate": "2026-04-27T20:30:01.000Z",
+      "endDate": "2026-04-27T22:00:01.000Z",
+      "dependencies": [
+        "t22"
+      ],
+      "milestone": false,
+      "description": "Update all RFC SM59 destinations, PI/PO communication channels and SAP BTP destination service entries to point to new P01 hostname and port.",
+      "taskNumber": "T-023"
+    },
+    {
+      "id": "t24",
+      "name": "Lift user logon restrictions – open system to QA / cutover team",
+      "category": "during-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-27T22:00:02.000Z",
+      "endDate": "2026-04-27T22:15:02.000Z",
+      "dependencies": [
+        "t23"
+      ],
+      "milestone": false,
+      "description": "Remove SM01 logon restrictions for testing users. Cutover and QA team log on first for validation before opening to all users.",
+      "taskNumber": "T-024"
+    },
+    {
+      "id": "t25",
+      "name": "Execute smoke test script – core business processes",
+      "category": "validation",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_testing",
+      "startDate": "2026-04-27T22:15:03.000Z",
+      "endDate": "2026-04-28T02:00:03.000Z",
+      "dependencies": [
+        "t24"
+      ],
+      "milestone": false,
+      "description": "Run standardised smoke test checklist: FI postings (FB50, F-02), MM goods receipt (MIGO), SD order-to-cash (VA01/VL01N/VF01), CO allocations. All must pass.",
+      "taskNumber": "T-025"
+    },
+    {
+      "id": "t26",
+      "name": "Data reconciliation – open items, asset values, GL balances",
+      "category": "validation",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_data_mgr",
+      "startDate": "2026-04-27T22:15:03.000Z",
+      "endDate": "2026-04-28T04:00:03.000Z",
+      "dependencies": [
+        "t24"
+      ],
+      "milestone": false,
+      "description": "Compare migrated record counts and financial totals against pre-migration extract. Maximum tolerated variance: 0.00% for balances, < 0.01% for open items.",
+      "taskNumber": "T-026"
+    },
+    {
+      "id": "t27",
+      "name": "Fiori Launchpad access validation per business role",
+      "category": "validation",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_security",
+      "startDate": "2026-04-28T00:00:00.000Z",
+      "endDate": "2026-04-28T04:00:00.000Z",
+      "dependencies": [
+        "t24"
+      ],
+      "milestone": false,
+      "description": "Log in as representative users from each business role (Accountant, Buyer, Sales Rep, Warehouse Clerk). Confirm tile visibility and transactional access.",
+      "taskNumber": "T-027"
+    },
+    {
+      "id": "t28",
+      "name": "Third-party integration end-to-end validation",
+      "category": "validation",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_infra",
+      "startDate": "2026-04-28T00:00:00.000Z",
+      "endDate": "2026-04-28T04:00:00.000Z",
+      "dependencies": [
+        "t23"
+      ],
+      "milestone": false,
+      "description": "Trigger and verify interface messages for key integrations: EDI (B2B), payroll, banking (SEPA/ACH), BI/BW extraction and any SOAP/REST APIs.",
+      "taskNumber": "T-028"
+    },
+    {
+      "id": "t29",
+      "name": "Performance baseline check (HANA memory, dialog response times)",
+      "category": "validation",
+      "priority": "medium",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-28T02:00:04.000Z",
+      "endDate": "2026-04-28T05:00:04.000Z",
+      "dependencies": [
+        "t25"
+      ],
+      "milestone": false,
+      "description": "Check SAP HANA memory footprint (hdbcons), dialog response times in ST05/SM66, and HANA alert thresholds. Must be within agreed SLA baselines.",
+      "taskNumber": "T-029"
+    },
+    {
+      "id": "t30",
+      "name": "Formal go-live sign-off by business and IT",
+      "category": "validation",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_pm",
+      "startDate": "2026-04-28T05:00:00.000Z",
+      "endDate": "2026-04-28T06:00:00.000Z",
+      "dependencies": [
+        "t25",
+        "t26",
+        "t27",
+        "t28"
+      ],
+      "milestone": true,
+      "description": "Business process owners and IT management formally sign off go-live. Document in cutover log. This triggers opening the system to all users.",
+      "taskNumber": "T-030"
+    },
+    {
+      "id": "t31",
+      "name": "Open system to all business users",
+      "category": "post-cutover",
+      "priority": "critical",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-28T06:00:01.000Z",
+      "endDate": "2026-04-28T06:30:01.000Z",
+      "dependencies": [
+        "t30"
+      ],
+      "milestone": true,
+      "description": "Remove all remaining logon restrictions. Confirm Fiori Launchpad URL is reachable from corporate network and VPN. Update IT helpdesk system status page.",
+      "taskNumber": "T-031"
+    },
+    {
+      "id": "t32",
+      "name": "Send go-live announcement to all users",
+      "category": "post-cutover",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_pm",
+      "startDate": "2026-04-28T06:30:02.000Z",
+      "endDate": "2026-04-28T07:00:02.000Z",
+      "dependencies": [
+        "t31"
+      ],
+      "milestone": false,
+      "description": "Send go-live email with new Fiori Launchpad URL, password reset instructions, quick-start guide link and hypercare support contact details.",
+      "taskNumber": "T-032"
+    },
+    {
+      "id": "t33",
+      "name": "Hypercare monitoring – BASIS (24h post go-live)",
+      "category": "post-cutover",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-04-28T06:30:02.000Z",
+      "endDate": "2026-04-29T06:30:02.000Z",
+      "dependencies": [
+        "t31"
+      ],
+      "milestone": false,
+      "description": "Continuous monitoring of HANA health (hdbconsole, DBA Cockpit), application server performance, background job queue and batch job success rate.",
+      "taskNumber": "T-033"
+    },
+    {
+      "id": "t34",
+      "name": "Hypercare monitoring – functional (first business day)",
+      "category": "post-cutover",
+      "priority": "high",
+      "status": "not-started",
+      "assignee": "r_func_lead",
+      "startDate": "2026-04-28T06:30:02.000Z",
+      "endDate": "2026-04-29T18:30:02.000Z",
+      "dependencies": [
+        "t31"
+      ],
+      "milestone": false,
+      "description": "Functional team on standby to support users on first business day. Monitor incident queue. Priority response for FI period-end and MM/SD order processing issues.",
+      "taskNumber": "T-034"
+    },
+    {
+      "id": "t35",
+      "name": "Decommission source system access and schedule archival",
+      "category": "post-cutover",
+      "priority": "medium",
+      "status": "not-started",
+      "assignee": "r_basis_lead",
+      "startDate": "2026-05-12T06:00:00.000Z",
+      "endDate": "2026-05-12T18:00:00.000Z",
+      "dependencies": [
+        "t31"
+      ],
+      "milestone": false,
+      "description": "2 weeks after go-live: remove all user access to source system. Initiate SAP system decommission process. Retain read-only archive access per compliance policy.",
+      "taskNumber": "T-035"
+    }
+  ],
+  "risks": [
+    {
+      "id": "rsk01",
+      "description": "SUM / DMO migration runtime exceeds planned window (estimated 8–12h, window is 10h)",
+      "severity": "high",
+      "probability": "medium",
+      "impact": "Cutover delayed into business hours; may require rollback decision",
+      "mitigation": "Run SUM dry-run migration 4 weeks prior. Pre-size HANA target for fast import. Agree extended window with business if dry-run shows > 9h.",
+      "owner": "r_basis_lead",
+      "status": "open",
+      "createdAt": "2026-03-01T08:00:00.000Z",
+      "statusHistory": [
+        { "status": "open", "enteredAt": "2026-03-01T08:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "rsk02",
+      "description": "Open item migration data variance exceeds tolerance (> 0.01%)",
+      "severity": "high",
+      "probability": "low",
+      "impact": "Financial period cannot be opened; audit compliance risk",
+      "mitigation": "Execute three dry-runs before cutover. Reconcile at GL account level. Finance sign-off required after each dry-run.",
+      "owner": "r_data_mgr",
+      "status": "mitigated",
+      "createdAt": "2026-03-01T08:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",     "enteredAt": "2026-03-01T08:00:00.000Z" },
+        { "status": "mitigated","enteredAt": "2026-03-08T12:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "rsk03",
+      "description": "Custom ABAP code breaks in S/4HANA strict syntax mode (priority-1 ATC findings)",
+      "severity": "high",
+      "probability": "medium",
+      "impact": "Critical transactions unavailable at go-live",
+      "mitigation": "ATC checks mandatory 6 weeks before cutover. Development freeze 2 weeks before. All P1 ATC findings must be resolved before go/no-go.",
+      "owner": "r_abap_lead",
+      "status": "open",
+      "createdAt": "2026-03-01T08:00:00.000Z",
+      "statusHistory": [
+        { "status": "open", "enteredAt": "2026-03-01T08:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "rsk04",
+      "description": "RFC / integration endpoint failures after DNS cutover",
+      "severity": "high",
+      "probability": "medium",
+      "impact": "EDI, payroll and BI extracts fail on first business day",
+      "mitigation": "All interface partners notified of new hostname 2 weeks prior. Integration smoke tests included in go-live checklist. Rollback: revert DNS TTL (set to 5 min 48h before).",
+      "owner": "r_infra",
+      "status": "open",
+      "createdAt": "2026-03-01T08:00:00.000Z",
+      "statusHistory": [
+        { "status": "open", "enteredAt": "2026-03-01T08:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "rsk05",
+      "description": "SAP Fiori / IAS SSO not functional for majority of users",
+      "severity": "medium",
+      "probability": "low",
+      "impact": "Users unable to log on via corporate SSO; productivity impact on day 1",
+      "mitigation": "IAS/IPS provisioning tested in pre-production. Emergency fallback: enable SAP ID Service local authentication. Basis on standby for certificate rotation.",
+      "owner": "r_security",
+      "status": "mitigated",
+      "createdAt": "2026-03-01T08:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",     "enteredAt": "2026-03-01T08:00:00.000Z" },
+        { "status": "mitigated","enteredAt": "2026-03-12T14:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "rsk06",
+      "description": "RISE Cloud Private Edition infrastructure not available during cutover window",
+      "severity": "high",
+      "probability": "low",
+      "impact": "Complete halt of migration; automatic rollback required",
+      "mitigation": "SAP RISE support ticket opened 48h before cutover. SAP SLA guarantees 99.9% uptime. Cloud Operations on standby. Rollback plan documented and agreed with SAP.",
+      "owner": "r_sap_coe",
+      "status": "mitigated",
+      "createdAt": "2026-03-01T08:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",     "enteredAt": "2026-03-01T08:00:00.000Z" },
+        { "status": "mitigated","enteredAt": "2026-03-05T10:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "rsk07",
+      "description": "Key cutover team member unavailable during migration weekend",
+      "severity": "medium",
+      "probability": "low",
+      "impact": "Delayed decision-making; extended cutover window",
+      "mitigation": "All critical roles have a named backup. Runbook is self-contained. War room bridge line active from T-2h to go-live +4h.",
+      "owner": "r_cutover_mgr",
+      "status": "mitigated",
+      "createdAt": "2026-03-01T08:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",     "enteredAt": "2026-03-01T08:00:00.000Z" },
+        { "status": "mitigated","enteredAt": "2026-03-03T09:00:00.000Z" }
+      ]
+    }
+  ],
+  "rollback": {
+    "trigger": "Rollback will be initiated if ANY of the following conditions occur:\n1. SUM / DMO migration fails with unrecoverable error before system restart\n2. Post-migration smoke tests show > 3 critical failures and cannot be resolved within 2 hours\n3. Data reconciliation variance > 0.01% on any financial balance and root cause cannot be identified within 1 hour\n4. System performance is > 50% below SLA baseline and cannot be resolved within 1 hour\n5. Go/no-go checklist still has open RED items at T+4h after system open\n\nRollback decision authority: Cutover Manager (Anna Müller) with CIO approval required if after point of no return.",
+    "pointOfNoReturn": "2026-04-28T04:00:00.000Z",
+    "steps": [
+      {
+        "id": "rb01",
+        "order": 1,
+        "title": "Declare rollback – notify all parties",
+        "description": "Cutover Manager formally declares rollback on the war room bridge. Notify SAP RISE support, steering committee and all team leads.",
+        "owner": "r_cutover_mgr",
+        "duration": 15,
+        "notes": "Use pre-drafted rollback communication template. Escalate to SAP RISE via existing support ticket."
+      },
+      {
+        "id": "rb02",
+        "order": 2,
+        "title": "Stop all migration activities immediately",
+        "description": "Halt SUM/DMO if still running (graceful abort via SUM UI or emergency stop). Halt all data migration program executions. Document current state in cutover log.",
+        "owner": "r_basis_lead",
+        "duration": 15,
+        "notes": "Do not force-kill OS processes unless SUM abort does not respond within 10 min. Contact SAP RISE support if HANA database is in inconsistent state."
+      },
+      {
+        "id": "rb03",
+        "order": 3,
+        "title": "Revert DNS to source P01 hostname",
+        "description": "Revert DNS CNAME and load balancer back to original source system endpoint. TTL was pre-set to 5 minutes 48h before cutover.",
+        "owner": "r_infra",
+        "duration": 10,
+        "notes": "Verify DNS propagation from 3 network zones before proceeding. Expected TTL flush: 5–10 min."
+      },
+      {
+        "id": "rb04",
+        "order": 4,
+        "title": "Restore source P01 database from pre-cutover backup",
+        "description": "Restore the full backup taken at T-2h (before SUM start) using BRRECOVER (Oracle) or HANA restore. Verify restore log for completeness.",
+        "owner": "r_basis_lead",
+        "duration": 120,
+        "notes": "Backup location confirmed before cutover. Estimated restore time: 90–150 min depending on DB size. SAP RISE support must co-ordinate HANA restore on cloud tenant."
+      },
+      {
+        "id": "rb05",
+        "order": 5,
+        "title": "Remove logon restrictions – restore access to source system",
+        "description": "Remove SM01 logon group restriction on source system. Confirm users can log on via old SAP GUI / Fiori URL.",
+        "owner": "r_basis_lead",
+        "duration": 15,
+        "notes": ""
+      },
+      {
+        "id": "rb06",
+        "order": 6,
+        "title": "Execute rollback smoke tests",
+        "description": "Verify source system is fully operational: check SM21 syslog, test FI posting (FB50), SD order (VA01) and MM goods receipt (MIGO).",
+        "owner": "r_testing",
+        "duration": 30,
+        "notes": ""
+      },
+      {
+        "id": "rb07",
+        "order": 7,
+        "title": "Send rollback communication to all users",
+        "description": "Send email to all users confirming rollback, system availability on original URL and timeline for next cutover attempt.",
+        "owner": "r_pm",
+        "duration": 20,
+        "notes": "Use pre-approved rollback email template. Coordinate messaging with management before sending."
+      },
+      {
+        "id": "rb08",
+        "order": 8,
+        "title": "Post-rollback incident report and root cause analysis",
+        "description": "Document complete timeline of events, root cause, corrective actions and revised cutover plan. Present to steering committee within 2 business days.",
+        "owner": "r_cutover_mgr",
+        "duration": 60,
+        "notes": "SAP RISE support team must provide incident report from their side within 24h."
+      }
+    ]
+  },
+  "gonogo": {
+    "decision": "pending",
+    "notes": "",
+    "criteria": {
+      "technical": [
+        {
+          "id": "gg_t01",
+          "text": "SUM / DMO dry-run completed successfully with runtime within window",
+          "status": "pending"
+        },
+        {
+          "id": "gg_t02",
+          "text": "Zero priority-1 ATC findings in custom code",
+          "status": "pending"
+        },
+        {
+          "id": "gg_t03",
+          "text": "All transports imported into P01 with RC ≤ 4",
+          "status": "pending"
+        },
+        {
+          "id": "gg_t04",
+          "text": "RISE infrastructure provisioned and network connectivity verified",
+          "status": "pending"
+        },
+        {
+          "id": "gg_t05",
+          "text": "Rollback procedure tested and confirmed < point-of-no-return",
+          "status": "pending"
+        },
+        {
+          "id": "gg_t06",
+          "text": "Pre-cutover backup taken and restore test successful",
+          "status": "pending"
+        },
+        {
+          "id": "gg_t07",
+          "text": "DNS TTL reduced to 5 minutes (48h before cutover)",
+          "status": "pending"
+        },
+        {
+          "id": "gg_t08",
+          "text": "HANA memory and performance baseline within SLA",
+          "status": "pending"
+        }
+      ],
+      "business": [
+        {
+          "id": "gg_b01",
+          "text": "Full UAT sign-off received from all business process owners",
+          "status": "pending"
+        },
+        {
+          "id": "gg_b02",
+          "text": "Open item migration dry-run reconciled with zero variance",
+          "status": "pending"
+        },
+        {
+          "id": "gg_b03",
+          "text": "FI posting period close / balance carry-forward confirmed",
+          "status": "pending"
+        },
+        {
+          "id": "gg_b04",
+          "text": "Business critical batch jobs tested and schedules confirmed",
+          "status": "pending"
+        },
+        {
+          "id": "gg_b05",
+          "text": "User communication sent (T-7 days and T-24h)",
+          "status": "pending"
+        }
+      ],
+      "operational": [
+        {
+          "id": "gg_o01",
+          "text": "War room bridge line active and all leads confirmed availability",
+          "status": "pending"
+        },
+        {
+          "id": "gg_o02",
+          "text": "SAP RISE support ticket open with named support engineer",
+          "status": "pending"
+        },
+        {
+          "id": "gg_o03",
+          "text": "Cutover runbook distributed to all team leads",
+          "status": "pending"
+        },
+        {
+          "id": "gg_o04",
+          "text": "Helpdesk team briefed and extra capacity scheduled for day 1",
+          "status": "pending"
+        },
+        {
+          "id": "gg_o05",
+          "text": "Rollback decision authority and escalation path confirmed",
+          "status": "pending"
+        }
+      ],
+      "resource": [
+        {
+          "id": "gg_r01",
+          "text": "All critical role holders confirmed available for cutover weekend",
+          "status": "pending"
+        },
+        {
+          "id": "gg_r02",
+          "text": "Backup persons identified for each critical role",
+          "status": "pending"
+        },
+        {
+          "id": "gg_r03",
+          "text": "SAP RISE / Cloud Operations team on standby (confirmed)",
+          "status": "pending"
+        },
+        {
+          "id": "gg_r04",
+          "text": "Third-party integration partner contacts available during cutover",
+          "status": "pending"
+        }
+      ]
+    }
+  },
+  "communications": [
+    {
+      "id": "cm01",
+      "timing": "2026-04-19T08:00:00.000Z",
+      "audience": "All SAP Users",
+      "type": "announcement",
+      "channel": "email",
+      "owner": "r_pm",
+      "status": "pending",
+      "template": "Subject: SAP System Migration to S/4HANA – Scheduled Downtime 26–28 April 2026\n\nDear Colleagues,\n\nWe are pleased to announce that our SAP system (P01) will be migrated to SAP S/4HANA as part of our RISE with SAP journey.\n\nPlanned maintenance window:\n  Start: Saturday, 26 April 2026 at 22:00 (local time)\n  End:   Monday, 28 April 2026 at 06:00 (local time, estimated)\n\nDuring this window the SAP system will be UNAVAILABLE. Please complete all open transactions and save all work before 21:00 on 26 April.\n\nAfter migration you will access SAP via the new Fiori Launchpad URL (to be communicated). Your username and password remain unchanged.\n\nFor questions, contact the project team: sap-migration@company.com\n\nThank you for your cooperation.\n[Project Manager Name]"
+    },
+    {
+      "id": "cm02",
+      "timing": "2026-04-25T08:00:00.000Z",
+      "audience": "All SAP Users",
+      "type": "reminder",
+      "channel": "email",
+      "owner": "r_pm",
+      "status": "pending",
+      "template": "Subject: REMINDER – SAP S/4HANA Migration starts TOMORROW at 22:00\n\nDear Colleagues,\n\nThis is your final reminder that the SAP system will be unavailable starting TOMORROW (Saturday 26 April) at 22:00.\n\nAction required before 21:00 tomorrow:\n  - Complete and save all open transactions\n  - Post all parked FI documents\n  - Release all open purchase orders and sales orders\n\nNew Fiori Launchpad URL (available from go-live Monday 28 April ~06:00):\n  https://p01.s4hana.company.com/fiori\n\nFor urgent issues during the migration weekend:\n  War room contact: +49-160-XXXXXXX\n  Email: sap-migration@company.com\n\n[Project Manager Name]"
+    },
+    {
+      "id": "cm03",
+      "timing": "2026-04-26T21:00:00.000Z",
+      "audience": "IT & Cutover Team",
+      "type": "status-update",
+      "channel": "slack",
+      "owner": "r_cutover_mgr",
+      "status": "pending",
+      "template": "🚀 CUTOVER HAS STARTED – P01 S/4HANA Migration\n\nSystem shutdown in T-60 min. All team leads please confirm readiness in this channel.\n\nWar room bridge: [dial-in details]\nCutover runbook: [link]\nSAP RISE ticket: [ticket number]\n\nStatus updates every 30 minutes in this channel. GO/NO-GO updates pinned."
+    },
+    {
+      "id": "cm04",
+      "timing": "2026-04-28T06:00:00.000Z",
+      "audience": "All SAP Users",
+      "type": "go-live",
+      "channel": "email",
+      "owner": "r_pm",
+      "status": "pending",
+      "template": "Subject: ✅ SAP S/4HANA is LIVE – P01 Migration Successful\n\nDear Colleagues,\n\nWe are delighted to confirm that the migration of our SAP system (P01) to SAP S/4HANA has been completed successfully.\n\nThe system is now available at your new Fiori Launchpad:\n  https://p01.s4hana.company.com/fiori\n\nPlease log in using your existing SAP username and password.\nIf you experience a login issue, please reset your password at: [SSO portal URL]\n\nHypercare support is available for the next 5 business days:\n  Helpdesk: +49-xxx-xxxxxxx | sap-support@company.com\n  Response SLA: Priority 1 = 1h, Priority 2 = 4h\n\nThank you to everyone who contributed to this milestone!\n\n[Project Manager Name] & [CIO Name]"
+    },
+    {
+      "id": "cm05",
+      "timing": "2026-04-28T08:00:00.000Z",
+      "audience": "Steering Committee & CIO",
+      "type": "status-update",
+      "channel": "email",
+      "owner": "r_pm",
+      "status": "pending",
+      "template": "Subject: S/4HANA Go-Live Status Report – P01 Migration Complete\n\nDear Steering Committee,\n\nExecutive Summary:\n  Migration Status:     COMPLETE ✅\n  Go-Live Time:        28 April 2026 at [TIME]\n  Downtime Duration:   [X] hours ([START] to [END])\n  Issues During Cutover: [NONE / list if any]\n  Data Reconciliation: PASSED (variance: 0.00%)\n  Smoke Tests:         PASSED (all critical processes)\n  Users notified:      Yes – go-live email sent at 06:00\n\nNext steps:\n  - Hypercare monitoring: 28 April – 9 May 2026\n  - Source system decommission: 12 May 2026\n  - Post-implementation review: 16 May 2026\n\nFull cutover log available on request.\n\n[Project Manager Name]"
+    }
+  ],
+  "taskSeq": 35,
+  "issues": [
+    {
+      "id": "iss01",
+      "title": "SUM dry-run runtime exceeded the planned 10-hour window by 2.5 hours",
+      "description": "The DMO dry-run completed in 12h 32m. Root cause: HANA table partitioning was not pre-configured on the target tenant. SAP RISE team has been engaged.",
+      "category": "technical",
+      "priority": "critical",
+      "status": "in-progress",
+      "owner": "r_basis_lead",
+      "raisedDate": "2026-03-05T09:00:00.000Z",
+      "dueDate": "2026-04-10T18:00:00.000Z",
+      "linkedItem": "",
+      "resolution": "",
+      "statusHistory": [
+        { "status": "open",        "enteredAt": "2026-03-05T09:00:00.000Z" },
+        { "status": "in-progress", "enteredAt": "2026-03-06T08:30:00.000Z" }
+      ]
+    },
+    {
+      "id": "iss02",
+      "title": "15 priority-1 ATC findings remain in Z-namespace payment processing code",
+      "description": "ABAP custom code review identified 15 P1 ATC findings in the ZFI_PAYMENT_PROC function group. These must be resolved before go/no-go. Developer sprint allocated.",
+      "category": "technical",
+      "priority": "critical",
+      "status": "in-progress",
+      "owner": "r_abap_lead",
+      "raisedDate": "2026-03-10T10:00:00.000Z",
+      "dueDate": "2026-04-15T18:00:00.000Z",
+      "linkedItem": "t02",
+      "resolution": "",
+      "statusHistory": [
+        { "status": "open",        "enteredAt": "2026-03-10T10:00:00.000Z" },
+        { "status": "in-progress", "enteredAt": "2026-03-11T09:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "iss03",
+      "title": "EDI partner (Logistics Co.) has not updated their RFC endpoint configuration",
+      "description": "Logistics Co. requires 6 weeks lead time to update their SAP RFC destination. Their change freeze window conflicts with our cutover date. Escalated to vendor account manager.",
+      "category": "integration",
+      "priority": "high",
+      "status": "blocked",
+      "owner": "r_infra",
+      "raisedDate": "2026-03-01T14:00:00.000Z",
+      "dueDate": "2026-04-12T18:00:00.000Z",
+      "linkedItem": "t28",
+      "resolution": "",
+      "statusHistory": [
+        { "status": "open",        "enteredAt": "2026-03-01T14:00:00.000Z" },
+        { "status": "in-progress", "enteredAt": "2026-03-03T09:00:00.000Z" },
+        { "status": "blocked",     "enteredAt": "2026-03-08T16:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "iss04",
+      "title": "Open AR balance carry-forward variance of 0.03% in dry-run 2",
+      "description": "Second dry-run showed EUR 48,200 unexplained variance in AR open item carry-forward across 3 company codes. Finance team investigating legacy data quality issue in ECC.",
+      "category": "data",
+      "priority": "critical",
+      "status": "in-progress",
+      "owner": "r_data_mgr",
+      "raisedDate": "2026-03-08T11:00:00.000Z",
+      "dueDate": "2026-04-08T18:00:00.000Z",
+      "linkedItem": "t03",
+      "resolution": "",
+      "statusHistory": [
+        { "status": "open",        "enteredAt": "2026-03-08T11:00:00.000Z" },
+        { "status": "in-progress", "enteredAt": "2026-03-09T08:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "iss05",
+      "title": "IAS/IPS SSO user provisioning does not sync AD groups correctly",
+      "description": "During pre-production testing, AD group membership changes are not reflected in IAS within expected 15-minute sync window. Affects ~200 users. SAP IPS connector config under review.",
+      "category": "security",
+      "priority": "high",
+      "status": "resolved",
+      "owner": "r_security",
+      "raisedDate": "2026-02-20T09:30:00.000Z",
+      "dueDate": "2026-03-31T18:00:00.000Z",
+      "linkedItem": "t07",
+      "resolution": "IPS connector delta load interval corrected to 5 minutes. Full sync executed and validated. Closed 2026-03-12.",
+      "statusHistory": [
+        { "status": "open",        "enteredAt": "2026-02-20T09:30:00.000Z" },
+        { "status": "in-progress", "enteredAt": "2026-02-21T10:00:00.000Z" },
+        { "status": "resolved",    "enteredAt": "2026-03-12T14:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "iss06",
+      "title": "Background job scheduling conflict: payroll batch overlaps cutover window",
+      "description": "Monthly payroll batch (RPCALCD0) is scheduled to run at 23:00 on 26 April — exactly when we close the system. Payroll team needs this re-scheduled or confirmed postponed.",
+      "category": "operational",
+      "priority": "high",
+      "status": "open",
+      "owner": "r_func_lead",
+      "raisedDate": "2026-03-11T15:00:00.000Z",
+      "dueDate": "2026-04-20T18:00:00.000Z",
+      "linkedItem": "t13",
+      "resolution": "",
+      "statusHistory": [
+        { "status": "open", "enteredAt": "2026-03-11T15:00:00.000Z" }
+      ]
+    }
+  ],
+  "decisions": [
+    {
+      "id": "dec01",
+      "title": "Extend cutover maintenance window from 10h to 14h",
+      "description": "Based on DMO dry-run result of 12h 32m, the project team proposes extending the cutover window to 14 hours (22:00 Sat – 12:00 Sun) to provide safety margin. Requires business and IT approval.",
+      "status": "approved",
+      "decidedBy": "r_cutover_mgr",
+      "impact": "Users will not have access until Sunday 12:00 instead of Sunday 06:00. Payroll cutover must be moved. Additional costs for extended SAP RISE support window.",
+      "options": "Option A: Keep 10h window and accept risk. Option B: Extend to 14h. Option C: Postpone to May.",
+      "outcome": "Option B approved. Business sign-off obtained from CFO and COO on 2026-03-09. SAP RISE support extended accordingly.",
+      "createdDate": "2026-03-06T09:00:00.000Z",
+      "decidedDate": "2026-03-09T14:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",     "enteredAt": "2026-03-06T09:00:00.000Z" },
+        { "status": "approved", "enteredAt": "2026-03-09T14:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "dec02",
+      "title": "Reduce DNS TTL to 5 minutes at T-48h before cutover",
+      "description": "To ensure fast DNS failover during cutover and fast rollback if needed, we must reduce the DNS TTL for the SAP system hostname from 3600s to 300s at least 48 hours before cutover weekend.",
+      "status": "approved",
+      "decidedBy": "r_infra",
+      "impact": "DNS changes propagate in 5 minutes instead of 1 hour. Required for rollback SLA. Network team must implement before 24 April 22:00.",
+      "options": "Option A: TTL 300s. Option B: TTL 60s (risk of DNS flood). Option C: Leave as-is (rollback risk).",
+      "outcome": "Option A approved. Network change request raised for 24 April 10:00. Confirmed in CAB meeting.",
+      "createdDate": "2026-03-01T10:00:00.000Z",
+      "decidedDate": "2026-03-05T11:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",     "enteredAt": "2026-03-01T10:00:00.000Z" },
+        { "status": "approved", "enteredAt": "2026-03-05T11:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "dec03",
+      "title": "Use HANA-native backup instead of BRBACKUP for pre-cutover backup",
+      "description": "SAP RISE Cloud Private Edition does not support BRBACKUP (Oracle tool). The pre-cutover backup must use the HANA native backup API via SAP RISE DBA Cockpit. Requires confirmation from SAP Cloud Operations.",
+      "status": "approved",
+      "decidedBy": "r_basis_lead",
+      "impact": "Different restore procedure required. HANA restore is faster (~90 min) than BRRECOVER (~120 min). SAP RISE support must co-ordinate.",
+      "options": "Option A: HANA native backup. Option B: Storage snapshot via hyperscaler.",
+      "outcome": "Option A selected. SAP RISE support confirmed HANA backup API available. Restore test scheduled for 2026-04-20.",
+      "createdDate": "2026-03-03T09:00:00.000Z",
+      "decidedDate": "2026-03-07T10:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",     "enteredAt": "2026-03-03T09:00:00.000Z" },
+        { "status": "approved", "enteredAt": "2026-03-07T10:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "dec04",
+      "title": "Defer Logistics Co. EDI integration to post-go-live (Phase 2)",
+      "description": "Due to Logistics Co. change freeze, their RFC endpoint cannot be updated before cutover. Proposal: go live without live EDI for Logistics Co. and handle manually for up to 2 weeks.",
+      "status": "open",
+      "decidedBy": "r_pm",
+      "impact": "Logistics Co. orders will require manual processing for estimated 1–2 weeks post go-live. ~30 orders/day affected. Manual process documented.",
+      "options": "Option A: Defer integration, go live. Option B: Postpone cutover until Logistics Co. is ready (adds ~6 weeks). Option C: Use middleware workaround.",
+      "outcome": "",
+      "createdDate": "2026-03-09T14:00:00.000Z",
+      "decidedDate": "",
+      "statusHistory": [
+        { "status": "open", "enteredAt": "2026-03-09T14:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "dec05",
+      "title": "Payroll batch job postponement to 28 April 06:00",
+      "description": "Monthly payroll batch must be postponed from its standard 26 April 23:00 run to 28 April after go-live sign-off. HR and Finance must agree to the delay.",
+      "status": "deferred",
+      "decidedBy": "r_func_lead",
+      "impact": "Payroll processing delayed by ~31 hours. No employee payment impact as bank value date is 30 April. HR system batch chains must be updated.",
+      "options": "Option A: Postpone to 28 April 06:00. Option B: Run earlier on 26 April 18:00 before window.",
+      "outcome": "Deferred pending HR Director approval. Follow-up scheduled for 2026-03-15.",
+      "createdDate": "2026-03-11T16:00:00.000Z",
+      "decidedDate": "",
+      "statusHistory": [
+        { "status": "open",     "enteredAt": "2026-03-11T16:00:00.000Z" },
+        { "status": "deferred", "enteredAt": "2026-03-12T09:00:00.000Z" }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "id": "act01",
+      "title": "Pre-configure HANA table partitioning on RISE target tenant",
+      "description": "Work with SAP RISE Cloud Operations to configure optimal HANA table partitioning (RANGE / HASH) for the top-20 largest tables before final dry-run. Target: reduce DMO runtime to under 10 hours.",
+      "priority": "critical",
+      "status": "in-progress",
+      "owner": "r_basis_lead",
+      "dueDate": "2026-04-05T18:00:00.000Z",
+      "linkedItem": "iss01",
+      "linkedType": "issue",
+      "notes": "SAP Note 2333201 applied. Second dry-run scheduled for 2026-03-25.",
+      "createdDate": "2026-03-06T09:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",        "enteredAt": "2026-03-06T09:00:00.000Z" },
+        { "status": "in-progress", "enteredAt": "2026-03-07T08:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "act02",
+      "title": "Resolve all 15 priority-1 ATC findings in ZFI_PAYMENT_PROC",
+      "description": "ABAP development team to remediate all P1 ATC findings. Use ABAP Cloud API replacements for deprecated function modules. Unit tests required for each fix. All fixes must pass ATC before transport release.",
+      "priority": "critical",
+      "status": "in-progress",
+      "owner": "r_abap_lead",
+      "dueDate": "2026-04-05T18:00:00.000Z",
+      "linkedItem": "iss02",
+      "linkedType": "issue",
+      "notes": "7 of 15 findings resolved as of 2026-03-12. Remaining 8 require ABAP Cloud API refactoring.",
+      "createdDate": "2026-03-10T10:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",        "enteredAt": "2026-03-10T10:00:00.000Z" },
+        { "status": "in-progress", "enteredAt": "2026-03-11T08:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "act03",
+      "title": "Escalate Logistics Co. RFC endpoint update to their VP of IT",
+      "description": "PM and integration lead to escalate the EDI configuration delay to Logistics Co. VP of IT. Request emergency change exception or agree formal deferral. Deadline for decision: 2026-03-20.",
+      "priority": "high",
+      "status": "open",
+      "owner": "r_pm",
+      "dueDate": "2026-03-20T18:00:00.000Z",
+      "linkedItem": "iss03",
+      "linkedType": "issue",
+      "notes": "",
+      "createdDate": "2026-03-09T09:00:00.000Z",
+      "statusHistory": [
+        { "status": "open", "enteredAt": "2026-03-09T09:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "act04",
+      "title": "Investigate and fix EUR 48,200 AR carry-forward variance (3 company codes)",
+      "description": "Finance team and data migration manager to reconcile the variance at document level. Run FAGL_FC_TRANS comparison report. Check for unposted parked documents and foreign currency revaluation postings.",
+      "priority": "critical",
+      "status": "in-progress",
+      "owner": "r_data_mgr",
+      "dueDate": "2026-04-01T18:00:00.000Z",
+      "linkedItem": "iss04",
+      "linkedType": "issue",
+      "notes": "Root cause tentatively identified: 3 parked FI documents from Dec 2025 not included in migration extract. Confirming with Finance.",
+      "createdDate": "2026-03-08T11:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",        "enteredAt": "2026-03-08T11:00:00.000Z" },
+        { "status": "in-progress", "enteredAt": "2026-03-09T14:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "act05",
+      "title": "Schedule and execute HANA backup restore test on RISE tenant",
+      "description": "Coordinate with SAP RISE Cloud Operations to perform a full restore test from HANA native backup on the target tenant. Must complete before 2026-04-20. Document restore time and confirm RTO.",
+      "priority": "high",
+      "status": "open",
+      "owner": "r_basis_lead",
+      "dueDate": "2026-04-20T18:00:00.000Z",
+      "linkedItem": "dec03",
+      "linkedType": "decision",
+      "notes": "Slot requested with SAP RISE support team. Awaiting confirmation.",
+      "createdDate": "2026-03-07T10:00:00.000Z",
+      "statusHistory": [
+        { "status": "open", "enteredAt": "2026-03-07T10:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "act06",
+      "title": "Update Network CAB request: reduce DNS TTL for SAP hostname to 300s",
+      "description": "Raise formal change request in ServiceNow for network team to reduce the TTL of the SAP system DNS CNAME from 3600 to 300 seconds. Change window: 24 April 10:00–11:00.",
+      "priority": "high",
+      "status": "completed",
+      "owner": "r_infra",
+      "dueDate": "2026-04-01T18:00:00.000Z",
+      "linkedItem": "dec02",
+      "linkedType": "decision",
+      "notes": "ServiceNow CHG0042815 approved in CAB meeting on 2026-03-10. Scheduled for 24 April.",
+      "createdDate": "2026-03-05T14:00:00.000Z",
+      "statusHistory": [
+        { "status": "open",        "enteredAt": "2026-03-05T14:00:00.000Z" },
+        { "status": "in-progress", "enteredAt": "2026-03-06T09:00:00.000Z" },
+        { "status": "completed",   "enteredAt": "2026-03-10T16:00:00.000Z" }
+      ]
+    },
+    {
+      "id": "act07",
+      "title": "Document manual order processing procedure for Logistics Co. deferral period",
+      "description": "Functional lead to create a step-by-step manual process guide for handling Logistics Co. purchase orders during the 1–2 week EDI deferral. Must be reviewed and approved by Logistics team before go-live.",
+      "priority": "medium",
+      "status": "open",
+      "owner": "r_func_lead",
+      "dueDate": "2026-04-18T18:00:00.000Z",
+      "linkedItem": "dec04",
+      "linkedType": "decision",
+      "notes": "",
+      "createdDate": "2026-03-09T15:00:00.000Z",
+      "statusHistory": [
+        { "status": "open", "enteredAt": "2026-03-09T15:00:00.000Z" }
+      ]
+    }
+  ],
+  "issueCategories": [
+    { "id": "ic01", "name": "Technical",   "color": "#7c3aed", "value": "technical" },
+    { "id": "ic02", "name": "Data",        "color": "#ea580c", "value": "data" },
+    { "id": "ic03", "name": "Integration", "color": "#0891b2", "value": "integration" },
+    { "id": "ic04", "name": "Security",    "color": "#dc2626", "value": "security" },
+    { "id": "ic05", "name": "Operational", "color": "#16a34a", "value": "operational" },
+    { "id": "ic06", "name": "Resource",    "color": "#d97706", "value": "resource" },
+    { "id": "ic07", "name": "Other",       "color": "#6b7280", "value": "other" }
+  ]
+}

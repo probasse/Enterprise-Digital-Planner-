@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Planner</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Mobile sidebar overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="logo">
+                <button class="sidebar-toggle" id="sidebarToggle" title="Collapse sidebar">&#x2630;</button>
+                <h2>🚀 Project Planner</h2>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item active" data-view="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-text">Dashboard</span>
+                </li>
+                <li class="nav-item" data-view="tasks">
+                    <span class="nav-icon">✅</span>
+                    <span class="nav-text">Tasks</span>
+                </li>
+                <li class="nav-item" data-view="timeline">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-text">Timeline</span>
+                </li>
+                <li class="nav-item" data-view="resources">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-text">Resources</span>
+                </li>
+                <li class="nav-item" data-view="risks">
+                    <span class="nav-icon">⚠️</span>
+                    <span class="nav-text">Risks</span>
+                </li>
+                <li class="nav-item" data-view="rollback">
+                    <span class="nav-icon">↩️</span>
+                    <span class="nav-text">Rollback Plan</span>
+                </li>
+                <li class="nav-item" data-view="gonogo">
+                    <span class="nav-icon">🚦</span>
+                    <span class="nav-text">Go/No-Go</span>
+                </li>
+                <li class="nav-item" data-view="communication">
+                    <span class="nav-icon">📢</span>
+                    <span class="nav-text">Communication</span>
+                </li>
+                <li class="nav-item" data-view="issues">
+                    <span class="nav-icon">🔴</span>
+                    <span class="nav-text">Issues</span>
+                </li>
+                <li class="nav-item" data-view="decisions">
+                    <span class="nav-icon">🟡</span>
+                    <span class="nav-text">Decisions</span>
+                </li>
+                <li class="nav-item" data-view="actions">
+                    <span class="nav-icon">🟢</span>
+                    <span class="nav-text">Actions</span>
+                </li>
+                <li class="nav-item" data-view="reports">
+                    <span class="nav-icon">📋</span>
+                    <span class="nav-text">Reports</span>
+                </li>
+            </ul>
+            <div class="sidebar-footer">
+                <button class="btn-theme" id="themeToggle">🌙 Dark Mode</button>
+                <div class="data-actions">
+                    <button class="btn-export" id="exportData">📤 Export JSON</button>
+                    <div class="csv-export-wrapper">
+                        <button class="btn-export" id="exportCsvBtn">📊 Export CSV ▾</button>
+                        <div class="csv-export-dropdown" id="csvExportDropdown" style="display:none;">
+                            <button data-csv="tasks">Tasks</button>
+                            <button data-csv="resources">Resources</button>
+                            <button data-csv="risks">Risks</button>
+                            <button data-csv="issues">Issues</button>
+                            <button data-csv="decisions">Decisions</button>
+                            <button data-csv="actions">Actions</button>
+                            <button data-csv="communications">Communications</button>
+                        </div>
+                    </div>
+                    <button class="btn-import" id="importData">📥 Import</button>
+                    <input type="file" id="importFile" accept=".json" style="display: none;">
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <h1 id="viewTitle">Dashboard</h1>
+                    <div class="project-switcher" id="projectSwitcher">
+                        <button class="btn-project-switch" id="projectSwitchBtn">
+                            <span id="activeProjectLabel">Project</span>
+                            <span class="switcher-arrow">&#9660;</span>
+                        </button>
+                        <div class="project-dropdown" id="projectDropdown" style="display:none;">
+                            <div id="projectDropdownList"></div>
+                            <div class="project-dropdown-footer">
+                                <button class="btn-secondary" id="newProjectBtn">+ New Project</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="header-right">
+                    <div class="countdown-container">
+                        <span class="countdown-label">Cut Over In:</span>
+                        <span class="countdown-timer" id="countdownTimer">--d --h --m</span>
+                        <span class="timezone-badge" id="timezoneBadge" title="Active timezone"></span>
+                    </div>
+                    <button class="btn-settings" id="projectSettings">⚙️</button>
+                    <a class="btn-settings" href="docs/user-guide.html" target="_blank" title="User Guide">❓</a>
+                </div>
+            </header>
+
+            <!-- Dashboard View -->
+            <section class="view active" id="dashboardView">
+                <div class="dashboard-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon">📋</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalTasks">0</span>
+                            <span class="stat-label">Total Tasks</span>
+                        </div>
+                    </div>
+                    <div class="stat-card success">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="completedTasks">0</span>
+                            <span class="stat-label">Completed</span>
+                        </div>
+                    </div>
+                    <div class="stat-card warning">
+                        <div class="stat-icon">🔄</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="inProgressTasks">0</span>
+                            <span class="stat-label">In Progress</span>
+                        </div>
+                    </div>
+                    <div class="stat-card danger">
+                        <div class="stat-icon">🚫</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="blockedTasks">0</span>
+                            <span class="stat-label">Blocked</span>
+                        </div>
+                    </div>
+                    <div class="stat-card info">
+                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalRisks">0</span>
+                            <span class="stat-label">Open Risks</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">🚦</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="goNoGoStatus">--</span>
+                            <span class="stat-label">Go/No-Go</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <div class="card progress-card">
+                        <h3>Overall Progress</h3>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="overallProgress"></div>
+                            <span class="progress-text" id="progressText">0%</span>
+                        </div>
+                        <div class="progress-breakdown" id="categoryProgressList">
+                            <!-- populated dynamically by renderDashboard() -->
+                        </div>
+                    </div>
+                    <div class="card upcoming-card">
+                        <h3>Upcoming Critical Tasks</h3>
+                        <ul class="upcoming-list" id="upcomingTasks">
+                            <li class="no-items">No upcoming tasks</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="dashboard-row">
+                    <div class="card risks-summary-card">
+                        <h3>Risk Summary</h3>
+                        <div class="risk-chart" id="riskChart">
+                            <div class="risk-bar high" id="highRiskBar">
+                                <span class="risk-count">0</span>
+                                <span class="risk-label">High</span>
+                            </div>
+                            <div class="risk-bar medium" id="mediumRiskBar">
+                                <span class="risk-count">0</span>
+                                <span class="risk-label">Medium</span>
+                            </div>
+                            <div class="risk-bar low" id="lowRiskBar">
+                                <span class="risk-count">0</span>
+                                <span class="risk-label">Low</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card recent-activity-card">
+                        <h3>Recent Activity</h3>
+                        <ul class="activity-list" id="recentActivity">
+                            <li class="no-items">No recent activity</li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tasks View -->
+            <section class="view" id="tasksView">
+                <div class="view-header">
+                    <div class="view-filters">
+                        <select id="taskCategoryFilter">
+                            <option value="all">All Categories</option>
+                            <!-- populated dynamically -->
+                        </select>
+                        <select id="taskStatusFilter">
+                            <option value="all">All Status</option>
+                            <!-- populated dynamically -->
+                        </select>
+                        <select id="taskPriorityFilter">
+                            <option value="all">All Priorities</option>
+                            <option value="critical">Critical</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                        <select id="taskAssigneeFilter">
+                            <option value="all">All Assignees</option>
+                            <!-- populated dynamically -->
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="addTaskBtn">+ Add Task</button>
+                    <button class="btn-secondary" id="recalcDatesBtn" title="Recalculate start/end dates for all tasks based on their dependencies">⛓ Recalculate Dates</button>
+                    <div class="col-visibility-wrapper">
+                        <button class="btn-secondary" id="colVisibilityBtn" title="Show/hide columns">⊞ Columns</button>
+                        <div class="col-visibility-dropdown" id="colVisibilityDropdown" style="display:none;">
+                            <label><input type="checkbox" data-col="0" checked> Task ID</label>
+                            <label><input type="checkbox" data-col="1" checked> Status</label>
+                            <label><input type="checkbox" data-col="2" checked> Task Name</label>
+                            <label><input type="checkbox" data-col="3" checked> Category</label>
+                            <label><input type="checkbox" data-col="4" checked> Priority</label>
+                            <label><input type="checkbox" data-col="5" checked> Assignee</label>
+                            <label><input type="checkbox" data-col="6" checked> Start Date</label>
+                            <label><input type="checkbox" data-col="7" checked> End Date</label>
+                            <label><input type="checkbox" data-col="8" checked> Duration</label>
+                            <label><input type="checkbox" data-col="9" checked> Dependencies</label>
+                            <label><input type="checkbox" data-col="10"> Actual Start</label>
+                            <label><input type="checkbox" data-col="11"> Actual End</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="tasks-container">
+                    <table class="tasks-table">
+                        <thead>
+                            <tr>
+                                <th data-col="0">Task ID</th>
+                                <th data-col="1">Status</th>
+                                <th data-col="2">Task Name</th>
+                                <th data-col="3">Category</th>
+                                <th data-col="4">Priority</th>
+                                <th data-col="5">Assignee</th>
+                                <th data-col="6">Start Date</th>
+                                <th data-col="7">End Date</th>
+                                <th data-col="8">Duration</th>
+                                <th data-col="9">Dependencies</th>
+                                <th data-col="10">Actual Start</th>
+                                <th data-col="11">Actual End</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasksTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Timeline View -->
+            <section class="view" id="timelineView">
+                <div class="view-header">
+                    <div class="timeline-controls">
+                        <button class="btn-secondary" id="zoomOut">−</button>
+                        <span id="zoomLevel">Week View</span>
+                        <button class="btn-secondary" id="zoomIn">+</button>
+                    </div>
+                    <div class="timeline-legend">
+                        <span class="legend-item"><span class="legend-dot pre"></span> Pre-Cutover</span>
+                        <span class="legend-item"><span class="legend-dot during"></span> During</span>
+                        <span class="legend-item"><span class="legend-dot post"></span> Post-Cutover</span>
+                        <span class="legend-item"><span class="legend-dot validation"></span> Validation</span>
+                        <span class="legend-item"><span class="legend-dot milestone"></span> Milestone</span>
+                    </div>
+                </div>
+                <div class="timeline-container" id="timelineContainer">
+                    <div class="timeline-header" id="timelineHeader"></div>
+                    <div class="timeline-body" id="timelineBody"></div>
+                </div>
+            </section>
+
+            <!-- Resources View -->
+            <section class="view" id="resourcesView">
+                <div class="view-header">
+                    <h2>Resource Assignment Matrix</h2>
+                    <button class="btn-primary" id="addResourceBtn">+ Add Resource</button>
+                </div>
+                <div class="resources-container">
+                    <table class="resources-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Role</th>
+                                <th>Email</th>
+                                <th>Phone</th>
+                                <th>Assigned Tasks</th>
+                                <th>Availability</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resourcesTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Risks View -->
+            <section class="view" id="risksView">
+                <div class="view-header">
+                    <div class="view-filters">
+                        <select id="riskSeverityFilter">
+                            <option value="all">All Severities</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                        <select id="riskStatusFilter">
+                            <option value="all">All Status</option>
+                            <option value="open">Open</option>
+                            <option value="mitigated">Mitigated</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    <button class="btn-primary" id="addRiskBtn">+ Add Risk</button>
+                </div>
+                <div class="risks-container">
+                    <table class="risks-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Risk Description</th>
+                                <th>Severity</th>
+                                <th>Probability</th>
+                                <th>Impact</th>
+                                <th>Mitigation Plan</th>
+                                <th>Owner</th>
+                                <th>Status</th>
+                                <th>Time in Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="risksTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Rollback Plan View -->
+            <section class="view" id="rollbackView">
+                <div class="view-header">
+                    <h2>Rollback Plan</h2>
+                    <button class="btn-primary" id="addRollbackStepBtn">+ Add Step</button>
+                </div>
+                <div class="rollback-info">
+                    <div class="info-card">
+                        <h4>Rollback Trigger Criteria</h4>
+                        <textarea id="rollbackTrigger" placeholder="Define the criteria that would trigger a rollback..."></textarea>
+                    </div>
+                    <div class="info-card">
+                        <h4>Point of No Return</h4>
+                        <input type="datetime-local" id="pointOfNoReturn">
+                        <p class="help-text">After this point, rollback may not be possible</p>
+                    </div>
+                </div>
+                <div class="rollback-steps-container">
+                    <h3>Rollback Steps</h3>
+                    <div class="rollback-steps" id="rollbackSteps">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Go/No-Go View -->
+            <section class="view" id="gonogoView">
+                <div class="view-header">
+                    <h2>Go/No-Go Decision Checklist</h2>
+                    <div class="gonogo-status">
+                        <span class="status-label">Current Decision:</span>
+                        <span class="status-value" id="gonogoDecision">PENDING</span>
+                    </div>
+                </div>
+                <div class="gonogo-container">
+                    <div class="gonogo-section">
+                        <h3>Technical Readiness</h3>
+                        <div class="checklist" id="technicalChecklist">
+                        </div>
+                        <button class="btn-secondary add-criteria-btn" data-category="technical">+ Add Criteria</button>
+                    </div>
+                    <div class="gonogo-section">
+                        <h3>Business Readiness</h3>
+                        <div class="checklist" id="businessChecklist">
+                        </div>
+                        <button class="btn-secondary add-criteria-btn" data-category="business">+ Add Criteria</button>
+                    </div>
+                    <div class="gonogo-section">
+                        <h3>Operational Readiness</h3>
+                        <div class="checklist" id="operationalChecklist">
+                        </div>
+                        <button class="btn-secondary add-criteria-btn" data-category="operational">+ Add Criteria</button>
+                    </div>
+                    <div class="gonogo-section">
+                        <h3>Resource Readiness</h3>
+                        <div class="checklist" id="resourceChecklist">
+                        </div>
+                        <button class="btn-secondary add-criteria-btn" data-category="resource">+ Add Criteria</button>
+                    </div>
+                </div>
+                <div class="gonogo-summary">
+                    <h3>Decision Summary</h3>
+                    <div class="summary-stats">
+                        <div class="summary-item go">
+                            <span class="summary-count" id="goCount">0</span>
+                            <span class="summary-label">GO</span>
+                        </div>
+                        <div class="summary-item nogo">
+                            <span class="summary-count" id="nogoCount">0</span>
+                            <span class="summary-label">NO-GO</span>
+                        </div>
+                        <div class="summary-item pending">
+                            <span class="summary-count" id="pendingCount">0</span>
+                            <span class="summary-label">PENDING</span>
+                        </div>
+                    </div>
+                    <div class="decision-notes">
+                        <h4>Decision Notes</h4>
+                        <textarea id="decisionNotes" placeholder="Enter notes about the Go/No-Go decision..."></textarea>
+                    </div>
+                    <button class="btn-primary" id="finalizeDecision">Finalize Decision</button>
+                </div>
+            </section>
+
+            <!-- Communication Plan View -->
+            <section class="view" id="communicationView">
+                <div class="view-header">
+                    <h2>Communication Plan</h2>
+                    <button class="btn-primary" id="addCommunicationBtn">+ Add Communication</button>
+                </div>
+                <div class="communication-container">
+                    <table class="communication-table">
+                        <thead>
+                            <tr>
+                                <th>Timing</th>
+                                <th>Audience</th>
+                                <th>Message Type</th>
+                                <th>Channel</th>
+                                <th>Owner</th>
+                                <th>Status</th>
+                                <th>Template</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="communicationTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Issues View -->
+            <section class="view" id="issuesView">
+                <div class="view-header">
+                    <h2>Issues</h2>
+                    <button class="btn-primary" id="addIssueBtn">+ Add Issue</button>
+                </div>
+                <div class="filters-bar">
+                    <select id="issueStatusFilter">
+                        <option value="">All Statuses</option>
+                        <option value="open">Open</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="blocked">Blocked</option>
+                        <option value="resolved">Resolved</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                    <select id="issuePriorityFilter">
+                        <option value="">All Priorities</option>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                    <select id="issueCategoryFilter">
+                        <option value="">All Categories</option>
+                    </select>
+                </div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Category</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Owner</th>
+                                <th>Raised</th>
+                                <th>Time in Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="issuesTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Decisions View -->
+            <section class="view" id="decisionsView">
+                <div class="view-header">
+                    <h2>Decisions</h2>
+                    <button class="btn-primary" id="addDecisionBtn">+ Add Decision</button>
+                </div>
+                <div class="filters-bar">
+                    <select id="decisionStatusFilter">
+                        <option value="">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="deferred">Deferred</option>
+                    </select>
+                </div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Status</th>
+                                <th>Decided By</th>
+                                <th>Impact</th>
+                                <th>Raised</th>
+                                <th>Time in Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="decisionsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Actions View -->
+            <section class="view" id="actionsView">
+                <div class="view-header">
+                    <h2>Actions</h2>
+                    <button class="btn-primary" id="addActionBtn">+ Add Action</button>
+                </div>
+                <div class="filters-bar">
+                    <select id="actionStatusFilter">
+                        <option value="">All Statuses</option>
+                        <option value="open">Open</option>
+                        <option value="in-progress">In Progress</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                    <select id="actionPriorityFilter">
+                        <option value="">All Priorities</option>
+                        <option value="critical">Critical</option>
+                        <option value="high">High</option>
+                        <option value="medium">Medium</option>
+                        <option value="low">Low</option>
+                    </select>
+                </div>
+                <div class="data-table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Owner</th>
+                                <th>Due Date</th>
+                                <th>Linked Item</th>
+                                <th>Time in Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="actionsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Reports View -->
+            <section class="view" id="reportsView">
+                <div class="view-header">
+                    <h2>Reports</h2>
+                </div>
+                <div class="reports-grid">
+                    <div class="report-card" data-report="task-list">
+                        <div class="report-icon">📋</div>
+                        <h3>Cut Over Task List</h3>
+                        <p>Complete checklist of all tasks with status</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="timeline">
+                        <div class="report-icon">📅</div>
+                        <h3>Timeline Report</h3>
+                        <p>Visual timeline with milestones</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="resource-matrix">
+                        <div class="report-icon">👥</div>
+                        <h3>Resource Assignment Matrix</h3>
+                        <p>Who is responsible for what</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="gonogo">
+                        <div class="report-icon">🚦</div>
+                        <h3>Go/No-Go Checklist</h3>
+                        <p>Decision criteria for proceeding</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="rollback">
+                        <div class="report-icon">↩️</div>
+                        <h3>Rollback Plan</h3>
+                        <p>Step-by-step rollback procedures</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="risk-assessment">
+                        <div class="report-icon">⚠️</div>
+                        <h3>Risk Assessment</h3>
+                        <p>Identified risks with mitigation plans</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="communication">
+                        <div class="report-icon">📢</div>
+                        <h3>Communication Plan</h3>
+                        <p>Stakeholder notifications schedule</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="issues">
+                        <div class="report-icon">🔴</div>
+                        <h3>Issues Register</h3>
+                        <p>All raised issues with status and resolution</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="decisions">
+                        <div class="report-icon">🟡</div>
+                        <h3>Decision Log</h3>
+                        <p>Key decisions made during cutover planning</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="actions">
+                        <div class="report-icon">🟢</div>
+                        <h3>Actions Register</h3>
+                        <p>Outstanding actions with owners and due dates</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="status-dashboard">
+                        <div class="report-icon">📊</div>
+                        <h3>Status Dashboard</h3>
+                        <p>Executive summary of cut over status</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="task-performance">
+                        <div class="report-icon">⏱️</div>
+                        <h3>Task Performance Report</h3>
+                        <p>Actual vs planned start, end and duration for all tasks</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <!-- Task Modal -->
+    <div class="modal" id="taskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="taskModalTitle">Add Task</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="taskForm">
+                    <input type="hidden" id="taskId">
+                    <div class="form-group">
+                        <label>Task ID</label>
+                        <span id="taskDisplayNumber" class="task-number-badge"></span>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskName">Task Name *</label>
+                        <input type="text" id="taskName" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskCategory">Category *</label>
+                            <select id="taskCategory" required>
+                                <!-- populated dynamically -->
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskPriority">Priority *</label>
+                            <select id="taskPriority" required>
+                                <option value="critical">Critical</option>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDependencies">Depends On (predecessor task)</label>
+                        <select id="taskDependencies" multiple>
+                        </select>
+                        <p class="help-text">Hold Ctrl/Cmd to select multiple. Use "Snap to Dependency" to set start date 1 second after the predecessor's end.</p>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="taskStartDate">Start Date &amp; Time *</label>
+                            <div class="input-with-btn">
+                                <input type="datetime-local" id="taskStartDate" required>
+                                <button type="button" class="btn-snap-dep" id="snapToDependencyBtn" title="Set start to 1 second after dependency end">⛓ Snap to Dependency</button>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="taskDuration">Duration (HH:MM:SS)</label>
+                            <input type="text" id="taskDuration" placeholder="e.g. 02:30:00">
+                            <p class="help-text">Fill to auto-calculate End Date.</p>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskEndDate">End Date &amp; Time *</label>
+                        <input type="datetime-local" id="taskEndDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskAssignee">Assignee</label>
+                        <select id="taskAssignee">
+                            <option value="">-- Select Assignee --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskDescription">Description</label>
+                        <textarea id="taskDescription" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="taskStatus">Status</label>
+                        <select id="taskStatus">
+                            <!-- populated dynamically -->
+                        </select>
+                    </div>
+                    <div class="form-row" id="taskActualDatesRow" style="display:none;">
+                        <div class="form-group">
+                            <label>Actual Start</label>
+                            <input type="text" id="taskActualStart" readonly class="input-readonly">
+                        </div>
+                        <div class="form-group">
+                            <label>Actual End</label>
+                            <input type="text" id="taskActualEnd" readonly class="input-readonly">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="taskMilestone">
+                            Mark as Milestone
+                        </label>
+                    </div>
+                    <!-- Status history — rendered by app.js when editing an existing task -->
+                    <div id="taskStatusHistory" style="display:none;">
+                        <div class="form-section-label">Status History</div>
+                        <div id="taskStatusHistoryContent"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveTaskBtn">Save Task</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Resource Modal -->
+    <div class="modal" id="resourceModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="resourceModalTitle">Add Resource</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="resourceForm">
+                    <input type="hidden" id="resourceId">
+                    <div class="form-group">
+                        <label for="resourceName">Name *</label>
+                        <input type="text" id="resourceName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="resourceRole">Role *</label>
+                        <input type="text" id="resourceRole" required>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="resourceEmail">Email</label>
+                            <input type="email" id="resourceEmail">
+                        </div>
+                        <div class="form-group">
+                            <label for="resourcePhone">Phone</label>
+                            <input type="tel" id="resourcePhone">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="resourceAvailability">Availability</label>
+                        <select id="resourceAvailability">
+                            <option value="available">Available</option>
+                            <option value="partially">Partially Available</option>
+                            <option value="unavailable">Unavailable</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="resourceStatus">Status</label>
+                        <select id="resourceStatus">
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="resourceNotes">Notes</label>
+                        <textarea id="resourceNotes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveResourceBtn">Save Resource</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Risk Modal -->
+    <div class="modal" id="riskModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="riskModalTitle">Add Risk</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="riskForm">
+                    <input type="hidden" id="riskId">
+                    <div class="form-group">
+                        <label for="riskDescription">Risk Description *</label>
+                        <textarea id="riskDescription" rows="2" required></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="riskSeverity">Severity *</label>
+                            <select id="riskSeverity" required>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="riskProbability">Probability *</label>
+                            <select id="riskProbability" required>
+                                <option value="high">High</option>
+                                <option value="medium">Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="riskImpact">Impact Description</label>
+                        <textarea id="riskImpact" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="riskMitigation">Mitigation Plan *</label>
+                        <textarea id="riskMitigation" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="riskOwner">Risk Owner</label>
+                        <select id="riskOwner">
+                            <option value="">-- Select Owner --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="riskStatus">Status</label>
+                        <select id="riskStatus">
+                            <option value="open">Open</option>
+                            <option value="mitigated">Mitigated</option>
+                            <option value="closed">Closed</option>
+                        </select>
+                    </div>
+                    <!-- Status history — rendered by app.js when editing an existing risk -->
+                    <div id="riskStatusHistory" style="display:none;">
+                        <div class="form-section-label">Status History</div>
+                        <div id="riskStatusHistoryContent"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveRiskBtn">Save Risk</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Communication Modal -->
+    <div class="modal" id="communicationModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="communicationModalTitle">Add Communication</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="communicationForm">
+                    <input type="hidden" id="communicationId">
+                    <div class="form-group">
+                        <label for="commTiming">Timing *</label>
+                        <input type="datetime-local" id="commTiming" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="commAudience">Audience *</label>
+                        <input type="text" id="commAudience" required placeholder="e.g., All Users, IT Team, Management">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="commType">Message Type *</label>
+                            <select id="commType" required>
+                                <option value="announcement">Announcement</option>
+                                <option value="reminder">Reminder</option>
+                                <option value="status-update">Status Update</option>
+                                <option value="go-live">Go-Live Notice</option>
+                                <option value="issue-alert">Issue Alert</option>
+                                <option value="completion">Completion Notice</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="commChannel">Channel *</label>
+                            <select id="commChannel" required>
+                                <option value="email">Email</option>
+                                <option value="slack">Slack/Teams</option>
+                                <option value="sms">SMS</option>
+                                <option value="phone">Phone Call</option>
+                                <option value="meeting">Meeting</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="commOwner">Owner</label>
+                        <select id="commOwner">
+                            <option value="">-- Select Owner --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="commTemplate">Message Template</label>
+                        <textarea id="commTemplate" rows="4" placeholder="Enter the message template or key points to communicate..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="commStatus">Status</label>
+                        <select id="commStatus">
+                            <option value="pending">Pending</option>
+                            <option value="sent">Sent</option>
+                            <option value="cancelled">Cancelled</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveCommunicationBtn">Save Communication</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rollback Step Modal -->
+    <div class="modal" id="rollbackModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="rollbackModalTitle">Add Rollback Step</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="rollbackForm">
+                    <input type="hidden" id="rollbackStepId">
+                    <div class="form-group">
+                        <label for="rollbackStepOrder">Step Order *</label>
+                        <input type="number" id="rollbackStepOrder" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="rollbackStepTitle">Step Title *</label>
+                        <input type="text" id="rollbackStepTitle" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="rollbackStepDescription">Description *</label>
+                        <textarea id="rollbackStepDescription" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="rollbackStepOwner">Responsible Person</label>
+                        <select id="rollbackStepOwner">
+                            <option value="">-- Select Person --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="rollbackStepDuration">Estimated Duration (minutes)</label>
+                        <input type="number" id="rollbackStepDuration" min="1">
+                    </div>
+                    <div class="form-group">
+                        <label for="rollbackStepNotes">Additional Notes</label>
+                        <textarea id="rollbackStepNotes" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveRollbackStepBtn">Save Step</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Go/No-Go Criteria Modal -->
+    <div class="modal" id="criteriaModal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2>Add Criteria</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="criteriaForm">
+                    <input type="hidden" id="criteriaCategory">
+                    <input type="hidden" id="criteriaId">
+                    <div class="form-group">
+                        <label for="criteriaText">Criteria *</label>
+                        <input type="text" id="criteriaText" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveCriteriaBtn">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Issue Modal -->
+    <div class="modal" id="issueModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="issueModalTitle">Add Issue</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="issueForm">
+                    <input type="hidden" id="issueId">
+                    <div class="form-group">
+                        <label for="issueTitle">Title *</label>
+                        <input type="text" id="issueTitle" required placeholder="Short description of the issue">
+                    </div>
+                    <div class="form-group">
+                        <label for="issueDescription">Description</label>
+                        <textarea id="issueDescription" rows="3" placeholder="Detailed description"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="issueCategory">Category *</label>
+                            <select id="issueCategory" required>
+                                <option value="">-- Select Category --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="issuePriority">Priority *</label>
+                            <select id="issuePriority" required>
+                                <option value="critical">Critical</option>
+                                <option value="high">High</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="issueStatus">Status *</label>
+                            <select id="issueStatus" required>
+                                <option value="open">Open</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="blocked">Blocked</option>
+                                <option value="resolved">Resolved</option>
+                                <option value="closed">Closed</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="issueOwner">Owner</label>
+                            <select id="issueOwner">
+                                <option value="">-- Select Owner --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="issueResolution">Resolution</label>
+                        <textarea id="issueResolution" rows="2" placeholder="How was the issue resolved?"></textarea>
+                    </div>
+                    <!-- Status history — rendered by app.js when editing an existing issue -->
+                    <div id="issueStatusHistory" style="display:none;">
+                        <div class="form-section-label">Status History</div>
+                        <div id="issueStatusHistoryContent"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveIssueBtn">Save Issue</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Decision Modal -->
+    <div class="modal" id="decisionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="decisionModalTitle">Add Decision</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="decisionForm">
+                    <input type="hidden" id="decisionId">
+                    <div class="form-group">
+                        <label for="decisionTitle">Title *</label>
+                        <input type="text" id="decisionTitle" required placeholder="Short description of the decision">
+                    </div>
+                    <div class="form-group">
+                        <label for="decisionDescription">Description / Context</label>
+                        <textarea id="decisionDescription" rows="2" placeholder="Background and context"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="decisionMade">Decision Made</label>
+                        <textarea id="decisionMade" rows="2" placeholder="What was decided?"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="decisionOptions">Options Considered</label>
+                        <textarea id="decisionOptions" rows="2" placeholder="What alternatives were considered?"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="decisionStatus">Status *</label>
+                            <select id="decisionStatus" required>
+                                <option value="pending">Pending</option>
+                                <option value="approved">Approved</option>
+                                <option value="rejected">Rejected</option>
+                                <option value="deferred">Deferred</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="decisionDecidedBy">Decided By</label>
+                            <select id="decisionDecidedBy">
+                                <option value="">-- Select Person --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="decisionImpact">Impact</label>
+                        <textarea id="decisionImpact" rows="2" placeholder="What is the impact of this decision?"></textarea>
+                    </div>
+                    <!-- Status history — rendered by app.js when editing an existing decision -->
+                    <div id="decisionStatusHistory" style="display:none;">
+                        <div class="form-section-label">Status History</div>
+                        <div id="decisionStatusHistoryContent"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveDecisionBtn">Save Decision</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Modal -->
+    <div class="modal" id="actionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="actionModalTitle">Add Action</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="actionForm">
+                    <input type="hidden" id="actionId">
+                    <div class="form-group">
+                        <label for="actionTitle">Title *</label>
+                        <input type="text" id="actionTitle" required placeholder="Short description of the action">
+                    </div>
+                    <div class="form-group">
+                        <label for="actionDescription">Description</label>
+                        <textarea id="actionDescription" rows="2" placeholder="Detailed description"></textarea>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="actionPriority">Priority *</label>
+                            <select id="actionPriority" required>
+                                <option value="critical">Critical</option>
+                                <option value="high">High</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="low">Low</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="actionStatus">Status *</label>
+                            <select id="actionStatus" required>
+                                <option value="open">Open</option>
+                                <option value="in-progress">In Progress</option>
+                                <option value="completed">Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="actionOwner">Owner</label>
+                            <select id="actionOwner">
+                                <option value="">-- Select Owner --</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="actionDueDate">Due Date</label>
+                            <input type="datetime-local" id="actionDueDate">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="actionLinkedItem">Linked Item (Issue/Risk/Task ID)</label>
+                        <input type="text" id="actionLinkedItem" placeholder="e.g. T-010 or risk reference">
+                    </div>
+                    <!-- Status history — rendered by app.js when editing an existing action -->
+                    <div id="actionStatusHistory" style="display:none;">
+                        <div class="form-section-label">Status History</div>
+                        <div id="actionStatusHistoryContent"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveActionBtn">Save Action</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Project Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Project Settings</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="settingsForm">
+                    <div class="form-group">
+                        <label for="settingsProjectName">Project Name *</label>
+                        <input type="text" id="settingsProjectName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="settingsCutoverDate">Cut Over Date & Time *</label>
+                        <input type="datetime-local" id="settingsCutoverDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="settingsTimezone">Timezone *</label>
+                        <select id="settingsTimezone"></select>
+                        <p class="help-text">All dates and times in the tool will be displayed in this timezone.</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="settingsDescription">Project Description</label>
+                        <textarea id="settingsDescription" rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>📂 Categories</h3>
+                        <p class="help-text">Define task categories. Pick a color for each badge. The slug is set at creation and won't change on rename.</p>
+                        <div class="phases-list" id="categoriesList">
+                            <!-- Categories will be rendered here -->
+                        </div>
+                        <div class="add-phase-form">
+                            <input type="text" id="newCategoryName" placeholder="Category name">
+                            <input type="color" id="newCategoryColor" value="#6b7280" title="Badge color">
+                            <button type="button" class="btn-secondary" id="addCategoryBtn">+ Add</button>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>🔖 Issue Categories</h3>
+                        <p class="help-text">Define categories for issues. Pick a color for each badge. The slug is set at creation and won't change on rename.</p>
+                        <div class="phases-list" id="issueCategoriesList">
+                            <!-- Issue categories will be rendered here -->
+                        </div>
+                        <div class="add-phase-form">
+                            <input type="text" id="newIssueCategoryName" placeholder="Category name">
+                            <input type="color" id="newIssueCategoryColor" value="#6b7280" title="Badge color">
+                            <button type="button" class="btn-secondary" id="addIssueCategoryBtn">+ Add</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-danger" id="resetDataBtn">Reset All Data</button>
+                <button class="btn-danger" id="deleteProjectBtn">Delete Project</button>
+                <button class="btn-primary" id="saveSettingsBtn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Modal -->
+    <div class="modal" id="reportModal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2 id="reportModalTitle">Report</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body report-body" id="reportContent">
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Close</button>
+                <button class="btn-primary" id="printReportBtn">🖨️ Print Report</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Project Modal -->
+    <div class="modal" id="newProjectModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>New Project</h2>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="newProjectForm">
+                    <div class="form-group">
+                        <label for="newProjectName">Project Name *</label>
+                        <input type="text" id="newProjectName" placeholder="e.g. S/4HANA Migration – Phase 2" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="newProjectDescription">Description</label>
+                        <textarea id="newProjectDescription" rows="2" placeholder="Brief description of this project"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="newProjectCutoverDate">Cutover Date &amp; Time</label>
+                        <input type="datetime-local" id="newProjectCutoverDate">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary modal-cancel">Cancel</button>
+                <button class="btn-primary" id="saveNewProjectBtn">Create Project</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/storage.js"></script>
+    <script src="js/tasks.js"></script>
+    <script src="js/timeline.js"></script>
+    <script src="js/reports.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
