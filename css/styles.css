@@ -232,52 +232,10 @@ a:hover {
 }
 
 .sidebar-footer {
-    padding: 16px;
-    border-top: 1px solid var(--border-color);
+    padding: 0;
+    border-top: none;
 }
 
-.btn-theme {
-    width: 100%;
-    padding: 10px;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    color: var(--text-primary);
-    cursor: pointer;
-    font-size: 0.85rem;
-    margin-bottom: 12px;
-    transition: all 0.2s ease;
-}
-
-.btn-theme:hover {
-    background: var(--accent-primary);
-    color: white;
-}
-
-.data-actions {
-    display: flex;
-    gap: 8px;
-}
-
-.btn-export,
-.btn-import {
-    flex: 1;
-    padding: 8px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius);
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: all 0.2s ease;
-}
-
-.btn-export:hover,
-.btn-import:hover {
-    background: var(--accent-secondary);
-    color: white;
-    border-color: var(--accent-secondary);
-}
 
 /* ==========================================
    Main Content
@@ -310,7 +268,7 @@ a:hover {
     top: 0;
     z-index: 50;
     gap: 12px;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .header-left {
@@ -319,7 +277,7 @@ a:hover {
     gap: 12px;
     min-width: 0;
     flex: 1;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .header-left h1 {
@@ -387,7 +345,6 @@ a:hover {
     box-shadow: 0 6px 20px var(--shadow-color);
     min-width: 260px;
     max-width: 320px;
-    overflow: hidden;
 }
 
 .project-dropdown-list {
@@ -848,6 +805,18 @@ a:hover {
     overflow-x: auto;
 }
 
+.resources-container,
+.risks-container,
+.communication-container {
+    overflow-y: auto;
+    max-height: calc(100vh - 220px);
+}
+
+.tasks-container {
+    overflow-y: auto;
+    max-height: calc(100vh - 220px);
+}
+
 .tasks-table {
     min-width: 1400px;
 }
@@ -858,6 +827,7 @@ a:hover {
 .communication-table {
     width: 100%;
     border-collapse: collapse;
+    table-layout: fixed;
     background: var(--bg-secondary);
     border-radius: var(--border-radius-lg);
     overflow: hidden;
@@ -876,6 +846,8 @@ a:hover {
     text-align: left;
     border-bottom: 1px solid var(--border-color);
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .tasks-table th,
@@ -890,6 +862,20 @@ a:hover {
     letter-spacing: 0.5px;
 }
 
+.tasks-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
+.resources-table th,
+.risks-table th,
+.communication-table th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+}
+
 .tasks-table td,
 .resources-table td,
 .risks-table td,
@@ -897,11 +883,27 @@ a:hover {
     font-size: 0.9rem;
 }
 
+.tasks-table tbody tr:nth-child(even),
+.resources-table tbody tr:nth-child(even),
+.risks-table tbody tr:nth-child(even),
+.communication-table tbody tr:nth-child(even),
+.data-table tbody tr:nth-child(even),
+#issuesTable tbody tr:nth-child(even),
+#decisionsTable tbody tr:nth-child(even),
+#actionsTable tbody tr:nth-child(even) {
+    background: var(--bg-tertiary);
+}
+
 .tasks-table tr:hover,
 .resources-table tr:hover,
 .risks-table tr:hover,
-.communication-table tr:hover {
-    background: var(--bg-tertiary);
+.communication-table tr:hover,
+.data-table tr:hover,
+#issuesTable tr:hover,
+#decisionsTable tr:hover,
+#actionsTable tr:hover {
+    background: #ede9ff; /* fallback for older browsers */
+    background: color-mix(in srgb, var(--accent-primary) 10%, var(--bg-secondary));
 }
 
 /* Status Badges */
@@ -1062,10 +1064,13 @@ a:hover {
 /* Generic data table shared by Issues/Decisions/Actions views */
 .data-table-container {
     overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 260px);
 }
 .data-table {
     width: 100%;
     min-width: 800px;
+    table-layout: fixed;
     border-collapse: collapse;
     margin-top: 8px;
 }
@@ -1075,6 +1080,9 @@ a:hover {
     text-align: left;
     border-bottom: 1px solid var(--border);
     font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .data-table th {
     background: var(--bg-tertiary);
@@ -1082,6 +1090,9 @@ a:hover {
     font-size: 0.8rem;
     text-transform: uppercase;
     color: var(--text-secondary);
+    position: sticky;
+    top: 0;
+    z-index: 2;
 }
 
 /* Filter bar used in Issues/Decisions/Actions views */
@@ -1162,13 +1173,6 @@ a:hover {
     white-space: nowrap;
     font-family: monospace;
     text-align: center;
-}
-
-/* Task name column — allow wrapping for long names */
-.tasks-table td:nth-child(3) {
-    white-space: normal;
-    min-width: 150px;
-    max-width: 280px;
 }
 
 .category-badge.pre-cutover {
@@ -1346,6 +1350,7 @@ a:hover {
     border-radius: 50%;
 }
 
+/* ── Timeline container & single scroll wrapper ─────────────────────────── */
 .timeline-container {
     background: var(--bg-secondary);
     border-radius: var(--border-radius-lg);
@@ -1354,122 +1359,150 @@ a:hover {
     border: 1px solid var(--border-color);
 }
 
-.timeline-header {
+/* One scrollable wrapper — header and rows scroll together horizontally */
+.tl-scroll-wrap {
+    overflow-x: auto;
+    overflow-y: auto;
+    max-height: calc(100vh - 220px);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────────── */
+.tl-header-row {
     display: flex;
     background: var(--bg-tertiary);
     border-bottom: 1px solid var(--border-color);
     min-height: 40px;
-    overflow-x: auto;
+    position: sticky;
+    top: 0;
+    z-index: 20;
 }
 
-.timeline-header-cell {
-    flex: 0 0 auto;
-    min-width: 100px;
-    padding: 10px;
-    text-align: center;
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--text-secondary);
+.tl-label-spacer {
+    flex-shrink: 0;
+    background: var(--bg-tertiary);
     border-right: 1px solid var(--border-color);
 }
 
-.timeline-header-cell.today {
+.tl-track-header {
+    position: relative;
+    flex-shrink: 0;
+    height: 40px;
+}
+
+.tl-header-cell {
+    position: absolute;
+    top: 0;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    border-right: 1px solid var(--border-color);
+    white-space: nowrap;
+    overflow: hidden;
+    box-sizing: border-box;
+    padding: 0 4px;
+}
+
+.tl-header-cell.today {
     background: var(--accent-primary);
     color: white;
 }
 
-.timeline-body {
-    min-height: 300px;
-    overflow-x: auto;
+/* ── Body rows ───────────────────────────────────────────────────────────── */
+.tl-body {
     position: relative;
 }
 
-.timeline-row {
+.tl-row {
     display: flex;
     align-items: center;
     border-bottom: 1px solid var(--border-color);
-    min-height: 50px;
-    position: relative;
+    min-height: 46px;
 }
 
-.timeline-task-label {
-    width: 200px;
+/* Sticky task-name label column */
+.tl-label {
     flex-shrink: 0;
-    padding: 8px 12px;
-    font-size: 0.85rem;
+    padding: 6px 10px;
+    font-size: 0.83rem;
     background: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
     position: sticky;
     left: 0;
-    z-index: 1;
+    z-index: 10;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    box-sizing: border-box;
 }
 
-.timeline-task-bar-container {
-    flex: 1;
+/* Fixed-width track that holds grid lines and the bar */
+.tl-track {
+    flex-shrink: 0;
     position: relative;
-    height: 50px;
-    display: flex;
-    align-items: center;
+    height: 46px;
 }
 
-.timeline-task-bar {
+.tl-grid-line {
     position: absolute;
-    height: 24px;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--border-color);
+    opacity: 0.5;
+}
+
+/* Task bars */
+.tl-bar {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    height: 22px;
     border-radius: 4px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    color: white;
-    font-weight: 500;
+    background: var(--accent-primary);
     cursor: pointer;
-    transition: transform 0.2s ease;
-    min-width: 20px;
+    transition: filter 0.15s ease;
+    min-width: 4px;
+    box-sizing: border-box;
 }
 
-.timeline-task-bar:hover {
-    transform: scaleY(1.2);
-}
+.tl-bar:hover { filter: brightness(1.15); }
 
-.timeline-task-bar.pre-cutover {
-    background: var(--pre-cutover);
-}
-
-.timeline-task-bar.during-cutover {
-    background: var(--during-cutover);
-}
-
-.timeline-task-bar.post-cutover {
-    background: var(--post-cutover);
-}
-
-.timeline-task-bar.validation {
-    background: var(--validation);
-}
-
-.timeline-task-bar.milestone {
-    width: 24px !important;
-    height: 24px;
+.tl-bar.pre-cutover   { background: var(--pre-cutover); }
+.tl-bar.during-cutover { background: var(--during-cutover); }
+.tl-bar.post-cutover  { background: var(--post-cutover); }
+.tl-bar.validation    { background: var(--validation); }
+.tl-bar.milestone {
+    width: 22px !important;
+    height: 22px;
     border-radius: 50%;
     background: var(--milestone);
 }
 
-.timeline-today-line {
+/* Today & cutover vertical lines — sit in .tl-body (position:relative),
+   left is LABEL_WIDTH + pixel offset into the track */
+.tl-today-line {
     position: absolute;
     top: 0;
     bottom: 0;
     width: 2px;
     background: var(--danger);
-    z-index: 10;
+    z-index: 15;
+    pointer-events: none;
 }
 
-.timeline-cutover-line {
+.tl-cutover-line {
     position: absolute;
     top: 0;
     bottom: 0;
     width: 3px;
     background: var(--accent-primary);
-    z-index: 10;
+    opacity: 0.8;
+    z-index: 15;
+    pointer-events: none;
 }
 
 /* ==========================================
@@ -1978,6 +2011,33 @@ a:hover {
     margin-bottom: 6px;
 }
 
+.copy-project-row {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    padding: 10px 14px;
+}
+
+.checkbox-label {
+    display: flex !important;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.875rem !important;
+    font-weight: 400 !important;
+    color: var(--text-primary) !important;
+    margin-bottom: 0 !important;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-top: 2px;
+    flex-shrink: 0;
+    width: 15px;
+    height: 15px;
+    cursor: pointer;
+    accent-color: var(--accent-primary);
+}
+
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -2390,7 +2450,7 @@ a:hover {
         gap: 8px;
         flex: 1;
         min-width: 0;
-        overflow: hidden;
+        overflow: visible;
     }
     #viewTitle {
         display: none;
@@ -2470,6 +2530,8 @@ a:hover {
     .data-table td {
         padding: 8px 10px;
         white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     /* ── Dashboard ── */
@@ -2588,22 +2650,6 @@ a:hover {
         height: 36px;
     }
 
-    /* ── Sidebar footer export buttons ── */
-    .data-actions {
-        flex-direction: column;
-        gap: 6px;
-    }
-    .data-actions button,
-    .data-actions .csv-export-wrapper {
-        width: 100%;
-    }
-    .csv-export-dropdown {
-        bottom: auto;
-        top: calc(100% + 6px);
-        left: 0;
-        right: 0;
-        min-width: unset;
-    }
 }
 
 /* ==========================================
@@ -2815,6 +2861,76 @@ a:hover {
 .tasks-table td.col-hidden {
     display: none;
 }
+
+/* Column drag-and-drop */
+.tasks-table th[draggable="true"] {
+    cursor: grab;
+}
+.tasks-table th.drag-over {
+    background: var(--accent-primary);
+    opacity: 0.7;
+}
+
+/* Drag-and-drop for other tables */
+.resources-table th[draggable="true"],
+.risks-table th[draggable="true"],
+.communication-table th[draggable="true"],
+.data-table th[draggable="true"] {
+    cursor: grab;
+}
+.resources-table th.drag-over,
+.risks-table th.drag-over,
+.communication-table th.drag-over,
+.data-table th.drag-over {
+    background: var(--accent-primary);
+    opacity: 0.7;
+}
+
+/* th needs relative positioning to host the resize handle and clip overflow */
+.tasks-table th,
+.resources-table th,
+.risks-table th,
+.communication-table th,
+.data-table th {
+    position: relative;
+    overflow: hidden;
+}
+
+/* Column resize handle */
+.col-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: 6px;
+    height: 100%;
+    cursor: col-resize;
+    user-select: none;
+    z-index: 10;
+}
+.col-resize-handle:hover,
+.col-resize-handle.resizing {
+    background: var(--accent-primary);
+    opacity: 0.5;
+}
+/* Hide resize handle on hidden columns */
+.tasks-table th.col-hidden .col-resize-handle {
+    display: none;
+}
+
+/* Sort indicator */
+.sort-indicator {
+    display: inline-block;
+    margin-left: 4px;
+    font-size: 0.7em;
+    opacity: 0.35;
+    vertical-align: middle;
+    pointer-events: none;
+}
+th.sorted-asc  .sort-indicator,
+th.sorted-desc .sort-indicator {
+    opacity: 1;
+    color: var(--accent-primary);
+}
 /* Read-only actual date fields in task modal */
 .input-readonly {
     background: var(--bg-tertiary);
@@ -2851,3 +2967,208 @@ a:hover {
     cursor: pointer;
 }
 .csv-export-dropdown button:hover { background: var(--bg-tertiary); }
+
+/* Settings modal — CSV dropdowns open downward */
+.settings-csv-wrapper .csv-export-dropdown {
+    bottom: auto;
+    top: calc(100% + 6px);
+}
+
+/* Settings modal — Data section button grid */
+.settings-data-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+.settings-data-actions .btn-secondary,
+.settings-data-actions .settings-csv-wrapper {
+    flex: 1 1 calc(50% - 4px);
+    min-width: 140px;
+}
+.settings-data-actions .settings-csv-wrapper .btn-secondary {
+    width: 100%;
+}
+
+/* ==========================================
+   Mass Edit / Bulk Actions
+   ========================================== */
+
+/* Checkbox column — narrow, not draggable */
+.tasks-table .col-checkbox {
+    width: 36px;
+    min-width: 36px;
+    text-align: center;
+    padding: 0 6px;
+}
+
+/* Selected row highlight */
+.tasks-table tbody tr.mass-selected {
+    background: rgba(59, 130, 246, 0.1) !important;
+    outline: 1px solid var(--accent-primary);
+    outline-offset: -1px;
+}
+
+/* Tasks total duration badge */
+.tasks-total-duration {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s, border-color 0.15s;
+}
+.tasks-total-duration:hover {
+    background: var(--border-color);
+    border-color: var(--text-secondary);
+}
+
+/* Duration breakdown modal */
+.dur-breakdown-row {
+    display: grid;
+    grid-template-columns: 10px 1fr 120px 36px 80px;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border-color);
+}
+.dur-breakdown-row:last-of-type { border-bottom: none; }
+.dur-breakdown-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+.dur-breakdown-label {
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.dur-breakdown-bar-wrap {
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+.dur-breakdown-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    min-width: 2px;
+}
+.dur-breakdown-pct {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    text-align: right;
+}
+.dur-breakdown-time {
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: monospace;
+    color: var(--text-primary);
+    text-align: right;
+}
+.dur-breakdown-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 2px;
+    margin-top: 4px;
+    border-top: 2px solid var(--border-color);
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+/* Mass-action bar */
+.mass-action-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 8px 12px;
+    background: rgba(59, 130, 246, 0.06);
+    border: 1px solid var(--accent-primary);
+    border-radius: var(--border-radius);
+    margin-bottom: 10px;
+}
+
+.mass-select-all-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.mass-selection-count {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-primary);
+    white-space: nowrap;
+    margin-right: 4px;
+}
+
+.mass-action-buttons {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    flex: 1;
+}
+
+.btn-sm {
+    padding: 5px 10px;
+    font-size: 0.8rem;
+}
+
+/* Edit Lock */
+.lock-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--warning, #f59e0b);
+    color: #fff;
+    border-radius: 99px;
+    font-size: 0.78rem;
+    font-weight: 600;
+}
+
+.lock-toggle-row {
+    padding: 12px;
+    background: var(--bg-tertiary);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+}
+
+.lock-toggle-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+}
+
+.lock-toggle-label span:first-child {
+    font-size: 1rem;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.lock-toggle-desc {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+

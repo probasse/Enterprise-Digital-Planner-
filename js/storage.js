@@ -42,8 +42,31 @@ const Storage = {
             DECISIONS:      `${ns}_decisions`,
             ACTIONS:        `${ns}_actions`,
             TASK_COLUMNS:   `${ns}_task_columns`,
-            ISSUE_CATEGORIES: `${ns}_issue_categories`
+            TASK_COLUMN_ORDER: `${ns}_task_column_order`,
+            RESOURCES_COLUMN_ORDER:      `${ns}_resources_col_order`,
+            RISKS_COLUMN_ORDER:          `${ns}_risks_col_order`,
+            COMMUNICATION_COLUMN_ORDER:  `${ns}_communication_col_order`,
+            ISSUES_COLUMN_ORDER:         `${ns}_issues_col_order`,
+            DECISIONS_COLUMN_ORDER:      `${ns}_decisions_col_order`,
+            ACTIONS_COLUMN_ORDER:        `${ns}_actions_col_order`,
+            TASKS_COL_WIDTHS:            `${ns}_tasks_col_widths`,
+            RESOURCES_COL_WIDTHS:        `${ns}_resources_col_widths`,
+            RISKS_COL_WIDTHS:            `${ns}_risks_col_widths`,
+            COMMUNICATION_COL_WIDTHS:    `${ns}_communication_col_widths`,
+            ISSUES_COL_WIDTHS:           `${ns}_issues_col_widths`,
+            DECISIONS_COL_WIDTHS:        `${ns}_decisions_col_widths`,
+            ACTIONS_COL_WIDTHS:          `${ns}_actions_col_widths`,
+            ISSUE_CATEGORIES: `${ns}_issue_categories`,
+            LOCKED:           `${ns}_locked`
         };
+    },
+
+    isLocked() {
+        return !!Storage.get(Storage.KEYS.LOCKED);
+    },
+
+    setLocked(bool) {
+        Storage.set(Storage.KEYS.LOCKED, bool);
     },
 
     // ── Project management ─────────────────────────────────────────────────────
@@ -76,6 +99,29 @@ const Storage = {
         const seeded = this.get(this.KEYS.PROJECT) || {};
         this.set(this.KEYS.PROJECT, { ...seeded, name: project.name, description: project.description, cutoverDate: project.cutoverDate });
         return project;
+    },
+
+    /**
+     * Copy all data from sourceId into the currently active project.
+     * The new project's name/description/cutoverDate are preserved.
+     * Called immediately after createProject() while the new project is active.
+     */
+    copyProjectData(sourceId) {
+        const sourceNs = `cutover_${sourceId}`;
+        const destNs   = `cutover_${this.getActiveProjectId()}`;
+
+        // Keys to copy (everything except project settings and UI prefs)
+        const dataSuffixes = [
+            '_tasks', '_resources', '_risks', '_rollback', '_gonogo',
+            '_communications', '_task_seq', '_categories', '_statuses',
+            '_issues', '_decisions', '_actions', '_issue_categories'
+        ];
+        dataSuffixes.forEach(suffix => {
+            const raw = localStorage.getItem(sourceNs + suffix);
+            if (raw !== null) {
+                localStorage.setItem(destNs + suffix, raw);
+            }
+        });
     },
 
     /**
@@ -308,7 +354,9 @@ const Storage = {
             issues: this.get(this.KEYS.ISSUES),
             decisions: this.get(this.KEYS.DECISIONS),
             actions: this.get(this.KEYS.ACTIONS),
-            issueCategories: this.get(this.KEYS.ISSUE_CATEGORIES)
+            issueCategories: this.get(this.KEYS.ISSUE_CATEGORIES),
+            timezone: this.get(this.KEYS.TIMEZONE),
+            locked: this.get(this.KEYS.LOCKED)
         };
         return JSON.stringify(data, null, 2);
     },
@@ -342,6 +390,8 @@ const Storage = {
             if (data.decisions) this.set(this.KEYS.DECISIONS, data.decisions);
             if (data.actions) this.set(this.KEYS.ACTIONS, data.actions);
             if (data.issueCategories) this.set(this.KEYS.ISSUE_CATEGORIES, data.issueCategories);
+            if (data.timezone != null) this.set(this.KEYS.TIMEZONE, data.timezone);
+            if (data.locked != null)   this.set(this.KEYS.LOCKED, data.locked);
 
             // Back-fill taskNumber for any tasks that don't have one,
             // then sync TASK_SEQ to the highest number found.
@@ -371,22 +421,21 @@ const Storage = {
                 data.tasks.forEach(t => { taskMap[t.id] = t; });
 
                 data.tasks.forEach(t => {
-                    // 1. Snap start date to 1 second after the single dependency's end date,
-                    //    but only when the task's start is at or before the dependency's end
-                    //    (i.e. the file expressed a sequential relationship). Tasks with an
-                    //    intentional delay after their predecessor are left as authored.
-                    if (t.dependencies && t.dependencies.length === 1) {
-                        const dep = taskMap[t.dependencies[0]];
-                        if (dep && dep.endDate && t.startDate) {
-                            const depEnd = new Date(dep.endDate).getTime();
-                            const taskStart = new Date(t.startDate).getTime();
-                            if (taskStart <= depEnd) {
-                                t.startDate = new Date(depEnd + 1000).toISOString();
-                                // Recompute endDate from duration if available
+                    // 1. Snap start date to 1 second after the latest dependency's end date.
+                    //    Handles any number of dependencies (not just single).
+                    if (t.dependencies && t.dependencies.length > 0) {
+                        const depEnds = t.dependencies
+                            .map(depId => taskMap[depId])
+                            .filter(dep => dep && dep.endDate)
+                            .map(dep => new Date(dep.endDate).getTime());
+                        if (depEnds.length) {
+                            const latestDepEnd = Math.max(...depEnds);
+                            const newStartMs = latestDepEnd + 1000;
+                            const taskStartMs = t.startDate ? new Date(t.startDate).getTime() : null;
+                            if (taskStartMs === null || taskStartMs !== newStartMs) {
+                                t.startDate = new Date(newStartMs).toISOString();
                                 if (t.durationSeconds && t.durationSeconds > 0) {
-                                    t.endDate = new Date(
-                                        new Date(t.startDate).getTime() + t.durationSeconds * 1000
-                                    ).toISOString();
+                                    t.endDate = new Date(newStartMs + t.durationSeconds * 1000).toISOString();
                                 }
                             }
                         }

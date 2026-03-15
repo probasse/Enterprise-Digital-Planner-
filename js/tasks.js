@@ -50,6 +50,29 @@ const Tasks = {
     },
 
     /**
+     * Add a task with an explicit taskNumber (for CSV import).
+     * Updates TASK_SEQ if the provided number is numerically higher.
+     */
+    addWithNumber(task, taskNumber) {
+        const tasks = this.getAll();
+        task.id = Storage.generateId();
+        task.taskNumber = taskNumber;
+        task.createdAt = new Date().toISOString();
+        task.statusHistory = [{ status: task.status || 'not-started', enteredAt: task.createdAt }];
+        tasks.push(task);
+        Storage.set(Storage.KEYS.TASKS, tasks);
+        // Advance sequence counter if this number is higher than current
+        const match = taskNumber.match(/^T-(\d+)$/);
+        if (match) {
+            const num = parseInt(match[1], 10);
+            const current = Storage.get(Storage.KEYS.TASK_SEQ) || 0;
+            if (num > current) Storage.set(Storage.KEYS.TASK_SEQ, num);
+        }
+        Storage.addActivity('Task created', task.name);
+        return task;
+    },
+
+    /**
      * Update existing task
      */
     update(id, updates) {
@@ -148,7 +171,11 @@ const Tasks = {
             tasks = tasks.filter(t => t.priority === filters.priority);
         }
         if (filters.assignee && filters.assignee !== 'all') {
-            tasks = tasks.filter(t => t.assignee === filters.assignee);
+            if (filters.assignee === 'unassigned') {
+                tasks = tasks.filter(t => !t.assignee);
+            } else {
+                tasks = tasks.filter(t => t.assignee === filters.assignee);
+            }
         }
 
         return tasks;
