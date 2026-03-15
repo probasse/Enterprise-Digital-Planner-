@@ -368,15 +368,17 @@ In Project Settings:
 Click **🌙 Dark Mode** in the sidebar to switch between light and dark themes.
 
 ### Export Data
-Click **📤 Export** in the sidebar to download all data as a JSON file.
-- Use this for backups
-- Share with team members
-- Transfer to another computer
+Click **Export** in the app to download all project data as a `.json` file.
+- **This is the only way to back up your data** — localStorage is not included in git commits
+- Use it to move data to another machine or browser
+- Share with team members so they can import it into their own browser
+- Keep a copy in cloud storage or another safe location
 
 ### Import Data
-Click **📥 Import** in the sidebar to load a previously exported JSON file.
-- Select the JSON file from your computer
-- Data will be loaded and displayed
+Click **Import** to load a previously exported `.json` file.
+- Imports all data into the currently active project
+- The project name, timezone, and lock state are all restored from the file
+- Task dependency dates are automatically recalculated on import
 
 ### Reset Data
 In Project Settings, click **Reset All Data** to:
@@ -440,13 +442,26 @@ The tool works best in modern browsers:
 
 ## Data Storage
 
-All data is stored in your browser's **Local Storage**. This means:
-- ✅ Data persists between sessions
-- ✅ No server or internet required
-- ⚠️ Data is specific to this browser/computer
-- ⚠️ Clearing browser data will delete your cutover plan
+All data is stored exclusively in your browser's **Local Storage**. There are no files written to disk, no server, and no database. This means:
 
-**Recommendation**: Export your data regularly as a backup!
+- ✅ Data persists between browser sessions on the same machine
+- ✅ No internet connection or server required
+- ⚠️ Data is tied to the **specific browser and machine** where it was entered
+- ⚠️ Clearing browser data / cache **permanently deletes** your cutover plan
+- ⚠️ Switching to a different browser or computer means **no data** — you must import first
+- ⚠️ Git commits and pushes to GitHub do **not** include your data — only the app code is versioned
+
+**To inspect raw data:** browser DevTools → Application → Local Storage
+
+### Backup & Restore
+
+| Action | How |
+|--------|-----|
+| **Back up** | Use the **Export** button — saves a complete `.json` file to your computer |
+| **Restore / move to another machine** | Use the **Import** button — select the previously exported `.json` file |
+| **Share with a team member** | Send them the exported `.json` file; they import it into their own browser |
+
+> **Recommendation:** Export your data regularly and keep the `.json` file in a safe location (e.g. cloud storage or email it to yourself). This is the only way to recover your data if the browser storage is cleared.
 
 ---
 
