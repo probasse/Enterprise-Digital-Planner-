@@ -4,7 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Summary
 
-Static HTML/CSS/JS single-page application for enterprise cutover planning. No build step, no framework, no backend — open `index.html` directly in a browser. All data persists in browser localStorage.
+Static HTML/CSS/JS single-page application for enterprise cutover planning. No build step, no framework, no backend — open `index.html` directly in a browser.
+
+## Data Storage
+
+**All data is stored exclusively in the browser's `localStorage`.** There are no files written to disk, no server, and no database. This means:
+
+- Data is tied to the specific browser and machine where it was entered
+- Committing/pushing to GitHub does **not** include any project data
+- Clearing browser data or switching browsers will lose all data
+- To back up or move data, use the in-app **Export** button which saves a `.json` file
+- To restore, use **Import** and select the previously exported `.json` file
+- To inspect raw data: browser DevTools → Application → Local Storage
+
+The timezone setting (`Europe/Berlin`, `America/New_York`, etc.) only affects **display** — all dates are stored internally as UTC ISO strings and are timezone-neutral.
 
 ## Running the App
 
