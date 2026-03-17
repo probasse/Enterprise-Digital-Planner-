@@ -42,6 +42,7 @@ const Storage = {
             DECISIONS:      `${ns}_decisions`,
             ACTIONS:        `${ns}_actions`,
             TASK_COLUMNS:   `${ns}_task_columns`,
+            TASK_NAME_WRAP: `${ns}_task_name_wrap`,
             TASK_COLUMN_ORDER: `${ns}_task_column_order`,
             RESOURCES_COLUMN_ORDER:      `${ns}_resources_col_order`,
             RISKS_COLUMN_ORDER:          `${ns}_risks_col_order`,

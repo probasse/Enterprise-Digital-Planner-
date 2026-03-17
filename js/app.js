@@ -6,6 +6,7 @@ const App = {
     currentView: 'dashboard',
     currentReportType: 'status-dashboard',
     _taskGrouping: 'none',
+    _taskNameWrap: false,
 
     // ==================== MULTI-SELECT FILTER HELPERS ====================
     /**
@@ -653,6 +654,7 @@ const App = {
         }
         this.applyColumnOrder();
         this.applyColumnVisibility();
+        this._applyTaskNameWrap();
         this.applyTableColumnWidths('tasks-table', Storage.KEYS.TASKS_COL_WIDTHS, 12);
         this._updateSortIndicators('tasks-table');
         this.bindColumnDrag();
@@ -761,6 +763,15 @@ const App = {
         this._msfBuild('taskAssigneeFilter', 'Assignees',  [], rerender);
         this.bindColumnVisibility();
 
+        // Word-wrap toggle for Task Name column
+        this._taskNameWrap = !!Storage.get(Storage.KEYS.TASK_NAME_WRAP);
+        this._applyTaskNameWrap();
+        document.getElementById('taskNameWrapBtn').addEventListener('click', () => {
+            this._taskNameWrap = !this._taskNameWrap;
+            Storage.set(Storage.KEYS.TASK_NAME_WRAP, this._taskNameWrap);
+            this._applyTaskNameWrap();
+        });
+
         // Group-by buttons
         document.querySelectorAll('.btn-groupby').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -867,6 +878,14 @@ const App = {
             this.saveColumnVisibility(vis);
             this.applyColumnVisibility();
         });
+    },
+
+    // ========== Task Name Wrap Toggle ==========
+    _applyTaskNameWrap() {
+        const table = document.querySelector('.tasks-table');
+        if (table) table.classList.toggle('task-name-wrap', this._taskNameWrap);
+        const btn = document.getElementById('taskNameWrapBtn');
+        if (btn) btn.classList.toggle('active', this._taskNameWrap);
     },
 
     // ========== Column Order (Drag-and-Drop) ==========
