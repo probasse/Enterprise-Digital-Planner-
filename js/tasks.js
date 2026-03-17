@@ -161,20 +161,30 @@ const Tasks = {
     getFiltered(filters) {
         let tasks = this.getAll();
 
-        if (filters.category && filters.category !== 'all') {
-            tasks = tasks.filter(t => t.category === filters.category);
+        const match = (vals, val) => !Array.isArray(vals)
+            ? (vals && vals !== 'all' ? val === vals : true)
+            : (vals.length === 0 ? true : vals.includes(val));
+
+        if (!match(filters.category, null)) {
+            tasks = tasks.filter(t => match(filters.category, t.category));
         }
-        if (filters.status && filters.status !== 'all') {
-            tasks = tasks.filter(t => t.status === filters.status);
+        if (!match(filters.status, null)) {
+            tasks = tasks.filter(t => match(filters.status, t.status));
         }
-        if (filters.priority && filters.priority !== 'all') {
-            tasks = tasks.filter(t => t.priority === filters.priority);
+        if (!match(filters.priority, null)) {
+            tasks = tasks.filter(t => match(filters.priority, t.priority));
         }
-        if (filters.assignee && filters.assignee !== 'all') {
-            if (filters.assignee === 'unassigned') {
-                tasks = tasks.filter(t => !t.assignee);
-            } else {
-                tasks = tasks.filter(t => t.assignee === filters.assignee);
+        if (filters.assignee !== undefined) {
+            const vals = filters.assignee;
+            const isAll = Array.isArray(vals) ? vals.length === 0 : (!vals || vals === 'all');
+            if (!isAll) {
+                const arr = Array.isArray(vals) ? vals : [vals];
+                if (arr.includes('unassigned')) {
+                    const others = arr.filter(v => v !== 'unassigned');
+                    tasks = tasks.filter(t => !t.assignee || others.includes(t.assignee));
+                } else {
+                    tasks = tasks.filter(t => arr.includes(t.assignee));
+                }
             }
         }
 
@@ -394,16 +404,13 @@ const Risks = {
      * Get filtered risks
      */
     getFiltered(filters) {
-        let risks = this.getAll();
-        
-        if (filters.severity && filters.severity !== 'all') {
-            risks = risks.filter(r => r.severity === filters.severity);
-        }
-        if (filters.status && filters.status !== 'all') {
-            risks = risks.filter(r => r.status === filters.status);
-        }
-        
-        return risks;
+        const match = (vals, val) => !Array.isArray(vals)
+            ? (vals && vals !== 'all' ? val === vals : true)
+            : (vals.length === 0 ? true : vals.includes(val));
+
+        return this.getAll().filter(r =>
+            match(filters.severity, r.severity) && match(filters.status, r.status)
+        );
     },
 
     /**

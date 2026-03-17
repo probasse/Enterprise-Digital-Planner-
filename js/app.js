@@ -5,6 +5,172 @@
 const App = {
     currentView: 'dashboard',
     currentReportType: 'status-dashboard',
+    _taskGrouping: 'none',
+
+    // ==================== MULTI-SELECT FILTER HELPERS ====================
+    /**
+     * Build (or rebuild) a custom multi-select dropdown inside a .msf-wrap container.
+     * @param {string} id       - element ID of the .msf-wrap div
+     * @param {string} label    - placeholder label, e.g. "Categories"
+     * @param {Array}  options  - [{value, label}]  (value='' means "All")
+     * @param {Function} onChange - called with no args when selection changes
+     */
+    _msfBuild(id, label, options, onChange) {
+        const wrap = document.getElementById(id);
+        if (!wrap) return;
+        wrap.innerHTML = '';
+        wrap.classList.add('msf-wrap');
+
+        // Button
+        const btn = document.createElement('div');
+        btn.className = 'msf-btn';
+        btn.innerHTML = `<span class="msf-label">${escapeHtml(label)}</span><span class="msf-btn-arrow">▼</span>`;
+        wrap.appendChild(btn);
+
+        // Dropdown
+        const dropdown = document.createElement('div');
+        dropdown.className = 'msf-dropdown';
+
+        // "All" item
+        const allItem = document.createElement('label');
+        allItem.className = 'msf-item msf-all-item';
+        const allCb = document.createElement('input');
+        allCb.type = 'checkbox';
+        allCb.value = '__all__';
+        allCb.checked = true;
+        allItem.appendChild(allCb);
+        allItem.appendChild(document.createTextNode('All'));
+        dropdown.appendChild(allItem);
+
+        // Value items
+        options.forEach(opt => {
+            const item = document.createElement('label');
+            item.className = 'msf-item';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = opt.value;
+            item.appendChild(cb);
+            item.appendChild(document.createTextNode(opt.label));
+            dropdown.appendChild(item);
+        });
+
+        wrap.appendChild(dropdown);
+
+        // Toggle open/close
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = wrap.classList.toggle('msf-open');
+            btn.classList.toggle('msf-active', isOpen);
+        });
+
+        // Checkbox logic
+        dropdown.addEventListener('change', (e) => {
+            const cb = e.target;
+            const allCheckbox = dropdown.querySelector('input[value="__all__"]');
+            if (cb === allCheckbox) {
+                if (cb.checked) {
+                    dropdown.querySelectorAll('input[type="checkbox"]').forEach(c => { c.checked = false; });
+                    allCheckbox.checked = true;
+                }
+            } else {
+                allCheckbox.checked = false;
+                // If nothing selected, revert to All
+                const anyChecked = [...dropdown.querySelectorAll('input[type="checkbox"]')]
+                    .filter(c => c !== allCheckbox && c.checked).length > 0;
+                if (!anyChecked) allCheckbox.checked = true;
+            }
+            this._msfUpdateBtn(wrap, label);
+            onChange();
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!wrap.contains(e.target)) {
+                wrap.classList.remove('msf-open');
+                btn.classList.remove('msf-active');
+            }
+        }, true);
+    },
+
+    /** Return array of selected values, or [] meaning "all" */
+    _msfGetValues(id) {
+        const wrap = document.getElementById(id);
+        if (!wrap) return [];
+        const allCb = wrap.querySelector('input[value="__all__"]');
+        if (!allCb || allCb.checked) return [];
+        return [...wrap.querySelectorAll('input[type="checkbox"]')]
+            .filter(c => c.value !== '__all__' && c.checked)
+            .map(c => c.value);
+    },
+
+    /** Update the button label and badge count */
+    _msfUpdateBtn(wrap, label) {
+        const allCb = wrap.querySelector('input[value="__all__"]');
+        const btn = wrap.querySelector('.msf-btn');
+        if (!allCb || !btn) return;
+        if (allCb.checked) {
+            btn.querySelector('.msf-label').textContent = label;
+            const badge = btn.querySelector('.msf-badge');
+            if (badge) badge.remove();
+        } else {
+            const count = [...wrap.querySelectorAll('input[type="checkbox"]')]
+                .filter(c => c.value !== '__all__' && c.checked).length;
+            btn.querySelector('.msf-label').textContent = label;
+            let badge = btn.querySelector('.msf-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'msf-badge';
+                btn.querySelector('.msf-btn-arrow').before(badge);
+            }
+            badge.textContent = count;
+        }
+    },
+
+    /**
+     * Rebuild option items in an existing msf dropdown (for dynamic filters like
+     * Category/Status/Assignee in Tasks and Category in Issues). Preserves selections.
+     */
+    _msfRebuildOptions(id, options) {
+        const wrap = document.getElementById(id);
+        if (!wrap) return;
+        const dropdown = wrap.querySelector('.msf-dropdown');
+        if (!dropdown) return;
+
+        // Remember current selections
+        const selected = new Set(this._msfGetValues(id));
+
+        // Remove all non-all items
+        [...dropdown.querySelectorAll('.msf-item:not(.msf-all-item)')].forEach(el => el.remove());
+
+        options.forEach(opt => {
+            const item = document.createElement('label');
+            item.className = 'msf-item';
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.value = opt.value;
+            cb.checked = selected.has(opt.value);
+            item.appendChild(cb);
+            item.appendChild(document.createTextNode(opt.label));
+            dropdown.appendChild(item);
+        });
+
+        // Sync "All" checkbox
+        const allCb = dropdown.querySelector('input[value="__all__"]');
+        const anyChecked = [...dropdown.querySelectorAll('input[type="checkbox"]')]
+            .filter(c => c.value !== '__all__' && c.checked).length > 0;
+        if (allCb) allCb.checked = !anyChecked;
+
+        const label = wrap.querySelector('.msf-label')?.textContent || '';
+        this._msfUpdateBtn(wrap, label);
+    },
+
+    /**
+     * Helper: returns true if val is in an active multi-filter array.
+     * vals=[] means "all" (no filter applied).
+     */
+    _msfMatch(vals, val) {
+        return vals.length === 0 || vals.includes(val);
+    },
 
     /**
      * Initialize application
@@ -229,6 +395,8 @@ const App = {
         document.getElementById('settingsCutoverDate').value = project.cutoverDate ? this.toLocalInput(project.cutoverDate) : '';
         this.populateTimezoneDropdown();
         document.getElementById('settingsLocked').checked = Storage.isLocked();
+        const settings = Storage.get(Storage.KEYS.SETTINGS) || {};
+        document.getElementById('settingsAutoProgress').checked = !!settings.autoProgress;
         this._syncThemeCheckbox();
         this.renderCategoriesList();
         this.bindCategoryActions();
@@ -253,6 +421,9 @@ const App = {
         );
         Storage.set(Storage.GLOBAL_KEYS.PROJECTS, projects);
         Storage.setLocked(document.getElementById('settingsLocked').checked);
+        const settings = Storage.get(Storage.KEYS.SETTINGS) || {};
+        settings.autoProgress = document.getElementById('settingsAutoProgress').checked;
+        Storage.set(Storage.KEYS.SETTINGS, settings);
         Storage.addActivity('Project settings updated');
         this.closeModal('settingsModal');
         this.renderProjectSwitcher();
@@ -344,10 +515,10 @@ const App = {
         this.populateStatusFilterDropdown();
 
         const filters = {
-            category: document.getElementById('taskCategoryFilter').value,
-            status:   document.getElementById('taskStatusFilter').value,
-            priority: document.getElementById('taskPriorityFilter').value,
-            assignee: document.getElementById('taskAssigneeFilter').value
+            category: this._msfGetValues('taskCategoryFilter'),
+            status:   this._msfGetValues('taskStatusFilter'),
+            priority: this._msfGetValues('taskPriorityFilter'),
+            assignee: this._msfGetValues('taskAssigneeFilter')
         };
         let tasks = Tasks.sortByDate(Tasks.getFiltered(filters));
         const allTasks = Tasks.getAll();
@@ -362,7 +533,8 @@ const App = {
             10: 'actualStart', 11: 'actualEnd'
         }, taskSortKeys);
 
-        const html = tasks.map(task => {
+        // Build a single task row HTML string (shared by flat and grouped paths)
+        const buildRow = (task) => {
             const cat = Categories.getByValue(task.category);
             const catLabel = cat ? escapeHtml(cat.name) : escapeHtml(task.category);
             const catColor = cat ? escapeHtml(cat.color) : '#6b7280';
@@ -397,9 +569,56 @@ const App = {
                 <td>
                     <button class="btn-icon" onclick="App.deleteTask('${escapeHtml(task.id)}')" title="Delete">🗑️</button>
                 </td>
-            </tr>
-        `;
-        }).join('');
+            </tr>`;
+        };
+
+        let html;
+        if (this._taskGrouping === 'none') {
+            html = tasks.map(buildRow).join('');
+        } else {
+            // Build groups
+            const groupKey = (task) => {
+                if (this._taskGrouping === 'category') {
+                    const cat = Categories.getByValue(task.category);
+                    return cat ? cat.name : (task.category || 'Uncategorised');
+                }
+                if (this._taskGrouping === 'status') {
+                    const s = Statuses.getByValue(task.status);
+                    return s ? s.name : (task.status || 'Unknown');
+                }
+                if (this._taskGrouping === 'assignee') {
+                    return Resources.getName(task.assignee) || 'Unassigned';
+                }
+                if (this._taskGrouping === 'dependency') {
+                    return (task.dependencies && task.dependencies.length > 0) ? 'Has Dependencies' : 'No Dependencies';
+                }
+                return 'Other';
+            };
+
+            // Preserve group collapse state across re-renders
+            if (!this._taskGroupCollapsed) this._taskGroupCollapsed = {};
+
+            const groups = {};
+            const groupOrder = [];
+            tasks.forEach(task => {
+                const key = groupKey(task);
+                if (!groups[key]) { groups[key] = []; groupOrder.push(key); }
+                groups[key].push(task);
+            });
+
+            html = groupOrder.map(key => {
+                const groupTasks = groups[key];
+                const isCollapsed = !!this._taskGroupCollapsed[key];
+                const gid = 'grp-' + key.replace(/\s+/g, '-').replace(/[^a-zA-Z0-9-]/g, '');
+                const headerRow = `<tr class="task-group-header${isCollapsed ? ' collapsed' : ''}" onclick="App._toggleTaskGroup('${escapeHtml(key)}')" data-group-key="${escapeHtml(key)}">
+                    <td colspan="14"><div class="group-header-inner"><span class="group-toggle">▼</span><span>${escapeHtml(key)}</span><span style="opacity:0.55;font-weight:400;font-size:0.78rem;">&nbsp;(${groupTasks.length} task${groupTasks.length !== 1 ? 's' : ''})</span></div></td>
+                </tr>`;
+                const memberRows = groupTasks.map(t =>
+                    buildRow(t).replace('<tr class="clickable-row', `<tr class="clickable-row task-group-member${isCollapsed ? ' group-collapsed' : ''}"`)
+                ).join('');
+                return headerRow + memberRows;
+            }).join('');
+        }
 
         document.getElementById('tasksTableBody').innerHTML = html || '<tr><td colspan="13" class="empty-state">No tasks found. Click "+ Add Task" to create one.</td></tr>';
 
@@ -441,12 +660,28 @@ const App = {
         this.bindTableColumnSort('tasks-table', () => this.renderTaskList());
     },
 
+    _toggleTaskGroup(key) {
+        if (!this._taskGroupCollapsed) this._taskGroupCollapsed = {};
+        this._taskGroupCollapsed[key] = !this._taskGroupCollapsed[key];
+        // Toggle DOM directly — no full re-render needed
+        const tbody = document.getElementById('tasksTableBody');
+        const headerRow = tbody.querySelector(`tr.task-group-header[data-group-key="${CSS.escape(key)}"]`);
+        if (!headerRow) return;
+        const collapsed = this._taskGroupCollapsed[key];
+        headerRow.classList.toggle('collapsed', collapsed);
+        let sibling = headerRow.nextElementSibling;
+        while (sibling && sibling.classList.contains('task-group-member')) {
+            sibling.classList.toggle('group-collapsed', collapsed);
+            sibling = sibling.nextElementSibling;
+        }
+    },
+
     showDurationBreakdown() {
         const filters = {
-            category: document.getElementById('taskCategoryFilter').value,
-            status:   document.getElementById('taskStatusFilter').value,
-            priority: document.getElementById('taskPriorityFilter').value,
-            assignee: document.getElementById('taskAssigneeFilter').value
+            category: this._msfGetValues('taskCategoryFilter'),
+            status:   this._msfGetValues('taskStatusFilter'),
+            priority: this._msfGetValues('taskPriorityFilter'),
+            assignee: this._msfGetValues('taskAssigneeFilter')
         };
         const tasks = Tasks.getFiltered(filters);
 
@@ -514,11 +749,26 @@ const App = {
     bindTaskActions() {
         document.getElementById('addTaskBtn').addEventListener('click', () => this.showTaskModal());
         document.getElementById('recalcDatesBtn').addEventListener('click', () => this.recalculateAllDates());
-        document.getElementById('taskCategoryFilter').addEventListener('change', () => this.renderTaskList());
-        document.getElementById('taskStatusFilter').addEventListener('change', () => this.renderTaskList());
-        document.getElementById('taskPriorityFilter').addEventListener('change', () => this.renderTaskList());
-        document.getElementById('taskAssigneeFilter').addEventListener('change', () => this.renderTaskList());
+
+        const rerender = () => this.renderTaskList();
+        const priorityOpts = [
+            {value:'critical',label:'Critical'},{value:'high',label:'High'},
+            {value:'medium',label:'Medium'},{value:'low',label:'Low'}
+        ];
+        this._msfBuild('taskCategoryFilter', 'Categories', [], rerender);
+        this._msfBuild('taskStatusFilter',   'Statuses',   [], rerender);
+        this._msfBuild('taskPriorityFilter', 'Priorities', priorityOpts, rerender);
+        this._msfBuild('taskAssigneeFilter', 'Assignees',  [], rerender);
         this.bindColumnVisibility();
+
+        // Group-by buttons
+        document.querySelectorAll('.btn-groupby').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this._taskGrouping = btn.dataset.group;
+                document.querySelectorAll('.btn-groupby').forEach(b => b.classList.toggle('active', b === btn));
+                this.renderTaskList();
+            });
+        });
 
         // Header select-all checkbox
         document.getElementById('taskSelectAllHeader').addEventListener('change', (e) => {
@@ -1021,6 +1271,12 @@ const App = {
         // Save all tasks back
         Storage.set(Storage.KEYS.TASKS, tasks);
         Storage.addActivity(`Recalculated dates for ${changed} task${changed !== 1 ? 's' : ''} based on dependencies`);
+
+        // Auto-progress: promote eligible successors of every completed task
+        Tasks.getAll()
+            .filter(t => t.status === 'completed')
+            .forEach(t => this._autoProgressSuccessors(t.id));
+
         this.renderTaskList();
         alert(`Updated ${changed} task${changed !== 1 ? 's' : ''}. Dates now reflect dependency order.`);
     },
@@ -1183,6 +1439,7 @@ const App = {
             if (!id) return;
             const newStatus = document.getElementById('taskStatus').value;
             const task = Tasks.updateStatus(id, newStatus);
+            if (newStatus === 'completed') this._autoProgressSuccessors(id);
             if (task) {
                 this._refreshTaskModalActualDates(task);
                 this._refreshTaskRowActualDates(id, task);
@@ -1229,6 +1486,7 @@ const App = {
 
         if (id) {
             Tasks.update(id, taskData);
+            if (taskData.status === 'completed') this._autoProgressSuccessors(id);
         } else {
             Tasks.add(taskData);
         }
@@ -1253,12 +1511,49 @@ const App = {
     quickUpdateTaskStatus(id, status) {
         if (this._assertNotLocked()) return;
         const task = Tasks.updateStatus(id, status);
+        const promoted = status === 'completed' ? this._autoProgressSuccessors(id) : [];
         this.renderDashboard();
-        // Live-update the actual dates row in the task list without full re-render
-        if (task) this._refreshTaskRowActualDates(id, task);
-        // Live-update if this task's modal is currently open
-        const openId = document.getElementById('taskId')?.value;
-        if (openId === id && task) this._refreshTaskModalActualDates(task);
+        if (promoted.length > 0) {
+            // Successors were promoted — full re-render so their status dropdowns update
+            this.renderTaskList();
+        } else {
+            // Live-update the actual dates row in the task list without full re-render
+            if (task) this._refreshTaskRowActualDates(id, task);
+            // Live-update if this task's modal is currently open
+            const openId = document.getElementById('taskId')?.value;
+            if (openId === id && task) this._refreshTaskModalActualDates(task);
+        }
+    },
+
+    /**
+     * If auto-progress is enabled, find all tasks that list `completedTaskId` as a
+     * dependency and whose every dependency is now completed — then move them to
+     * 'in-progress'. Returns the array of tasks that were promoted (may be empty).
+     */
+    _autoProgressSuccessors(completedTaskId) {
+        const settings = Storage.get(Storage.KEYS.SETTINGS) || {};
+        if (!settings.autoProgress) return [];
+
+        const allTasks = Tasks.getAll();
+        const promoted = [];
+
+        allTasks.forEach(task => {
+            // Skip tasks already running or done
+            if (['in-progress', 'completed'].includes(task.status)) return;
+            const deps = task.dependencies || [];
+            if (!deps.includes(completedTaskId)) return;
+            // All dependencies must be completed
+            const allDepsComplete = deps.every(depId => {
+                const dep = allTasks.find(t => t.id === depId);
+                return dep && dep.status === 'completed';
+            });
+            if (allDepsComplete) {
+                Tasks.updateStatus(task.id, 'in-progress');
+                promoted.push(task);
+            }
+        });
+
+        return promoted;
     },
 
     _refreshTaskRowActualDates(id, task) {
@@ -1376,8 +1671,8 @@ const App = {
     // ==================== RISKS ====================
     renderRiskList() {
         const filters = {
-            severity: document.getElementById('riskSeverityFilter').value,
-            status: document.getElementById('riskStatusFilter').value
+            severity: this._msfGetValues('riskSeverityFilter'),
+            status:   this._msfGetValues('riskStatusFilter')
         };
         let risks = Risks.getFiltered(filters);
         // Pre-compute sort keys for computed/display-only columns
@@ -1567,6 +1862,7 @@ const App = {
             if (!task) return;
             if (action === 'status') {
                 Tasks.updateStatus(id, value);
+                if (value === 'completed') this._autoProgressSuccessors(id);
                 changed++;
             } else if (action === 'category') {
                 Tasks.update(id, { category: value });
@@ -1619,8 +1915,13 @@ const App = {
 
     bindRiskActions() {
         document.getElementById('addRiskBtn').addEventListener('click', () => this.showRiskModal());
-        document.getElementById('riskSeverityFilter').addEventListener('change', () => this.renderRiskList());
-        document.getElementById('riskStatusFilter').addEventListener('change', () => this.renderRiskList());
+        const rerender = () => this.renderRiskList();
+        this._msfBuild('riskSeverityFilter', 'Severity', [
+            {value:'high',label:'High'},{value:'medium',label:'Medium'},{value:'low',label:'Low'}
+        ], rerender);
+        this._msfBuild('riskStatusFilter', 'Status', [
+            {value:'open',label:'Open'},{value:'mitigated',label:'Mitigated'},{value:'closed',label:'Closed'}
+        ], rerender);
     },
 
     showRiskModal(risk = null) {
@@ -1945,13 +2246,14 @@ const App = {
 
     // ==================== ISSUES ====================
     renderIssueList() {
-        const statusFilter = document.getElementById('issueStatusFilter').value;
-        const priorityFilter = document.getElementById('issuePriorityFilter').value;
-        const categoryFilter = document.getElementById('issueCategoryFilter').value;
+        this.populateIssueCategoryFilterDropdown();
+        const statusVals   = this._msfGetValues('issueStatusFilter');
+        const priorityVals = this._msfGetValues('issuePriorityFilter');
+        const categoryVals = this._msfGetValues('issueCategoryFilter');
         let items = Issues.getAll();
-        if (statusFilter) items = items.filter(i => i.status === statusFilter);
-        if (priorityFilter) items = items.filter(i => i.priority === priorityFilter);
-        if (categoryFilter) items = items.filter(i => i.category === categoryFilter);
+        if (statusVals.length)   items = items.filter(i => statusVals.includes(i.status));
+        if (priorityVals.length) items = items.filter(i => priorityVals.includes(i.priority));
+        if (categoryVals.length) items = items.filter(i => categoryVals.includes(i.category));
 
         const issueDurations = items.map(item => { const d = Issues.getStatusDurations(item); return d[d.length-1]; });
         const issueSortKeys = {
@@ -1995,9 +2297,16 @@ const App = {
 
     bindIssueActions() {
         document.getElementById('addIssueBtn').addEventListener('click', () => this.showIssueModal());
-        document.getElementById('issueStatusFilter').addEventListener('change', () => this.renderIssueList());
-        document.getElementById('issuePriorityFilter').addEventListener('change', () => this.renderIssueList());
-        document.getElementById('issueCategoryFilter').addEventListener('change', () => this.renderIssueList());
+        const rerender = () => this.renderIssueList();
+        this._msfBuild('issueStatusFilter', 'Status', [
+            {value:'open',label:'Open'},{value:'in-progress',label:'In Progress'},
+            {value:'blocked',label:'Blocked'},{value:'resolved',label:'Resolved'},{value:'closed',label:'Closed'}
+        ], rerender);
+        this._msfBuild('issuePriorityFilter', 'Priority', [
+            {value:'critical',label:'Critical'},{value:'high',label:'High'},
+            {value:'medium',label:'Medium'},{value:'low',label:'Low'}
+        ], rerender);
+        this._msfBuild('issueCategoryFilter', 'Category', [], rerender);
     },
 
     showIssueModal(issue = null) {
@@ -2067,9 +2376,9 @@ const App = {
 
     // ==================== DECISIONS ====================
     renderDecisionList() {
-        const statusFilter = document.getElementById('decisionStatusFilter').value;
+        const statusVals = this._msfGetValues('decisionStatusFilter');
         let items = Decisions.getAll();
-        if (statusFilter) items = items.filter(d => d.status === statusFilter);
+        if (statusVals.length) items = items.filter(d => statusVals.includes(d.status));
 
         const decDurations = items.map(item => { const d = Decisions.getStatusDurations(item); return d[d.length-1]; });
         const decSortKeys = {
@@ -2109,7 +2418,10 @@ const App = {
 
     bindDecisionActions() {
         document.getElementById('addDecisionBtn').addEventListener('click', () => this.showDecisionModal());
-        document.getElementById('decisionStatusFilter').addEventListener('change', () => this.renderDecisionList());
+        this._msfBuild('decisionStatusFilter', 'Status', [
+            {value:'pending',label:'Pending'},{value:'approved',label:'Approved'},
+            {value:'rejected',label:'Rejected'},{value:'deferred',label:'Deferred'}
+        ], () => this.renderDecisionList());
     },
 
     showDecisionModal(decision = null) {
@@ -2179,11 +2491,11 @@ const App = {
 
     // ==================== ACTIONS ====================
     renderActionList() {
-        const statusFilter = document.getElementById('actionStatusFilter').value;
-        const priorityFilter = document.getElementById('actionPriorityFilter').value;
+        const statusVals   = this._msfGetValues('actionStatusFilter');
+        const priorityVals = this._msfGetValues('actionPriorityFilter');
         let items = Actions.getAll();
-        if (statusFilter) items = items.filter(a => a.status === statusFilter);
-        if (priorityFilter) items = items.filter(a => a.priority === priorityFilter);
+        if (statusVals.length)   items = items.filter(a => statusVals.includes(a.status));
+        if (priorityVals.length) items = items.filter(a => priorityVals.includes(a.priority));
 
         const now = new Date();
         const actDurations = items.map(item => { const d = Actions.getStatusDurations(item); return d[d.length-1]; });
@@ -2226,8 +2538,14 @@ const App = {
 
     bindActionActions() {
         document.getElementById('addActionBtn').addEventListener('click', () => this.showActionModal());
-        document.getElementById('actionStatusFilter').addEventListener('change', () => this.renderActionList());
-        document.getElementById('actionPriorityFilter').addEventListener('change', () => this.renderActionList());
+        const rerender = () => this.renderActionList();
+        this._msfBuild('actionStatusFilter', 'Status', [
+            {value:'open',label:'Open'},{value:'in-progress',label:'In Progress'},{value:'completed',label:'Completed'}
+        ], rerender);
+        this._msfBuild('actionPriorityFilter', 'Priority', [
+            {value:'critical',label:'Critical'},{value:'high',label:'High'},
+            {value:'medium',label:'Medium'},{value:'low',label:'Low'}
+        ], rerender);
     },
 
     showActionModal(action = null) {
@@ -2309,14 +2627,32 @@ const App = {
 
     showReport(type) {
         const report = Reports.generate(type);
+        this._currentReport = report;
         document.getElementById('reportModalTitle').textContent = report.title;
         document.getElementById('reportContent').innerHTML = report.content;
+        const csvBtn = document.getElementById('downloadCsvReportBtn');
+        if (csvBtn) csvBtn.style.display = report.csv ? '' : 'none';
         this.openModal('reportModal');
     },
 
     renderReport(type) {
         const report = Reports.generate(type);
         document.getElementById('reportContent').innerHTML = report.content;
+    },
+
+    downloadReportCsv() {
+        const report = this._currentReport;
+        if (!report || !report.csv) return;
+        const csvString = Reports._rowsToCsv(report.csv);
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = report.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase() + '.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     },
 
     // ==================== GLOBAL ACTIONS ====================
@@ -2346,6 +2682,7 @@ const App = {
         document.getElementById('saveActionBtn')?.addEventListener('click', () => this.saveAction());
         document.getElementById('saveCriteriaBtn')?.addEventListener('click', () => this.saveGonogoCriteria());
         document.getElementById('printReportBtn')?.addEventListener('click', () => window.print());
+        document.getElementById('downloadCsvReportBtn')?.addEventListener('click', () => this.downloadReportCsv());
         document.getElementById('projectSettings')?.addEventListener('click', () => this.showProjectModal());
         document.getElementById('resetDataBtn')?.addEventListener('click', () => this.resetData());
         document.getElementById('deleteProjectBtn')?.addEventListener('click', () => {
@@ -3185,46 +3522,30 @@ const App = {
     },
 
     populateIssueCategoryFilterDropdown() {
-        const select = document.getElementById('issueCategoryFilter');
-        if (!select) return;
-        const current = select.value;
-        select.innerHTML = '<option value="">All Categories</option>' +
-            IssueCategories.getAll().map(c =>
-                `<option value="${escapeHtml(c.value)}" ${c.value === current ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
-            ).join('');
+        this._msfRebuildOptions('issueCategoryFilter',
+            IssueCategories.getAll().map(c => ({ value: c.value, label: c.name }))
+        );
     },
 
     // Filter bar helpers — preserve current selection across re-renders
     populateCategoryFilterDropdown() {
-        const select = document.getElementById('taskCategoryFilter');
-        if (!select) return;
-        const current = select.value;
-        select.innerHTML = '<option value="all">All Categories</option>' +
-            Categories.getAll().map(c =>
-                `<option value="${escapeHtml(c.value)}" ${c.value === current ? 'selected' : ''}>${escapeHtml(c.name)}</option>`
-            ).join('');
+        this._msfRebuildOptions('taskCategoryFilter',
+            Categories.getAll().map(c => ({ value: c.value, label: c.name }))
+        );
     },
 
     populateStatusFilterDropdown() {
-        const select = document.getElementById('taskStatusFilter');
-        if (!select) return;
-        const current = select.value;
-        select.innerHTML = '<option value="all">All Status</option>' +
-            Statuses.getAll().map(s =>
-                `<option value="${escapeHtml(s.value)}" ${s.value === current ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
-            ).join('');
+        this._msfRebuildOptions('taskStatusFilter',
+            Statuses.getAll().map(s => ({ value: s.value, label: s.name }))
+        );
     },
 
     populateAssigneeFilterDropdown() {
-        const select = document.getElementById('taskAssigneeFilter');
-        if (!select) return;
-        const current = select.value;
-        select.innerHTML = '<option value="all">All Assignees</option>' +
-            '<option value="unassigned">Unassigned</option>' +
-            Resources.getAll().filter(r => r.status !== 'inactive').map(r =>
-                `<option value="${escapeHtml(r.id)}" ${r.id === current ? 'selected' : ''}>${escapeHtml(r.name)} (${escapeHtml(r.role)})</option>`
-            ).join('');
-        select.value = current;
+        const opts = [{ value: 'unassigned', label: 'Unassigned' },
+            ...Resources.getAll().filter(r => r.status !== 'inactive')
+                .map(r => ({ value: r.id, label: `${r.name} (${r.role})` }))
+        ];
+        this._msfRebuildOptions('taskAssigneeFilter', opts);
     },
 
     populateTaskDependencyDropdown(currentTaskId, selectedIds = []) {

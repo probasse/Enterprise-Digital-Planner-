@@ -19,7 +19,8 @@ const Reports = {
             'decisions': this.generateDecisionsReport,
             'actions': this.generateActionsReport,
             'status-dashboard': this.generateStatusDashboardReport,
-            'task-performance': this.generateTaskPerformanceReport
+            'task-performance': this.generateTaskPerformanceReport,
+            'task-overdue': this.generateTaskOverdueReport
         };
 
         const generator = generators[type];
@@ -117,6 +118,36 @@ const Reports = {
     },
 
     /**
+     * Escape a single value for CSV: wrap in quotes, double any internal quotes.
+     */
+    _csvCell(v) {
+        if (v === null || v === undefined) return '';
+        const s = String(v).replace(/\r?\n/g, ' ');
+        if (s.includes(',') || s.includes('"') || s.includes('\n')) {
+            return '"' + s.replace(/"/g, '""') + '"';
+        }
+        return s;
+    },
+
+    /**
+     * Convert a rows array (first row = headers) to a CSV string with BOM.
+     */
+    _rowsToCsv(rows) {
+        return '\uFEFF' + rows.map(r => r.map(c => this._csvCell(c)).join(',')).join('\r\n');
+    },
+
+    /**
+     * Plain-text version of depLabels (no escapeHtml) for CSV output.
+     */
+    _depLabelsCsv(deps, allTasks) {
+        if (!deps || deps.length === 0) return '';
+        return deps.map(id => {
+            const t = allTasks.find(x => x.id === id);
+            return t ? (t.taskNumber || t.id) : id;
+        }).join('; ');
+    },
+
+    /**
      * 1. Cut Over Task List Report
      */
     generateTaskListReport() {
@@ -203,7 +234,23 @@ const Reports = {
             }
         });
 
-        return { title: 'Cut Over Task List', content };
+        const csvRows = [
+            ['Task ID','Task Name','Milestone','Priority','Assignee','Category','Start','End','Duration','Dependencies','Status'],
+            ...tasks.map(t => [
+                t.taskNumber || '',
+                t.name,
+                t.milestone ? 'Yes' : 'No',
+                t.priority,
+                Resources.getName(t.assignee),
+                t.category || '',
+                this.fmt24(t.startDate),
+                this.fmt24(t.endDate),
+                this.fmtDuration(t.durationSeconds),
+                this._depLabelsCsv(t.dependencies, tasks),
+                t.status
+            ])
+        ];
+        return { title: 'Cut Over Task List', content, csv: csvRows };
     },
 
     /**
@@ -421,7 +468,18 @@ const Reports = {
             }
         });
 
-        return { title: 'Resource Assignment Matrix', content };
+        const csvRows = [
+            ['Name','Role','Email','Phone','Availability','Assigned Tasks'],
+            ...resources.map(r => [
+                r.name,
+                r.role,
+                r.email || '',
+                r.phone || '',
+                r.availability || '',
+                Resources.getAssignedTaskCount(r.id)
+            ])
+        ];
+        return { title: 'Resource Assignment Matrix', content, csv: csvRows };
     },
 
     /**
@@ -515,7 +573,15 @@ const Reports = {
             `;
         }
 
-        return { title: 'Go/No-Go Checklist', content };
+        const gonogoData = GoNoGo.get();
+        const allCriteria = ['technical','business','operational','resource'].flatMap(cat =>
+            (gonogoData.criteria[cat] || []).map(item => [cat, item.text, item.status])
+        );
+        const csvRows = [
+            ['Category','Criteria','Status'],
+            ...allCriteria
+        ];
+        return { title: 'Go/No-Go Checklist', content, csv: csvRows };
     },
 
     /**
@@ -593,7 +659,20 @@ const Reports = {
         
         content += '</div>';
 
-        return { title: 'Rollback Plan', content };
+        const rollbackData = Rollback.get();
+        const steps = rollbackData.steps || [];
+        const csvRows = [
+            ['Step','Title','Description','Owner','Duration (min)','Notes'],
+            ...steps.sort((a,b) => a.order - b.order).map(s => [
+                s.order,
+                s.title,
+                s.description || '',
+                Resources.getName(s.owner),
+                s.duration || 0,
+                s.notes || ''
+            ])
+        ];
+        return { title: 'Rollback Plan', content, csv: csvRows };
     },
 
     /**
@@ -732,7 +811,20 @@ const Reports = {
             content += `</div>`;
         }
 
-        return { title: 'Risk Assessment', content };
+        const csvRows = [
+            ['ID','Description','Severity','Probability','Impact','Owner','Status','Mitigation'],
+            ...risks.map((risk, idx) => [
+                'R-' + String(idx + 1).padStart(3, '0'),
+                risk.description,
+                risk.severity,
+                risk.probability,
+                risk.impact || '',
+                Resources.getName(risk.owner),
+                risk.status,
+                risk.mitigation || ''
+            ])
+        ];
+        return { title: 'Risk Assessment', content, csv: csvRows };
     },
 
     /**
@@ -823,7 +915,19 @@ ${escapeHtml(comm.template)}
             }
         });
 
-        return { title: 'Communication Plan', content };
+        const csvRows = [
+            ['Timing','Audience','Type','Channel','Owner','Status','Template'],
+            ...communications.map(c => [
+                this.fmt24(c.timing),
+                c.audience,
+                c.type,
+                c.channel,
+                Resources.getName(c.owner),
+                c.status,
+                c.template || ''
+            ])
+        ];
+        return { title: 'Communication Plan', content, csv: csvRows };
     },
 
     /**
@@ -1166,7 +1270,20 @@ ${escapeHtml(comm.template)}
             content += `</div>`;
         }
 
-        return { title: 'Issues Register', content };
+        const csvRowsIssues = [
+            ['ID','Title','Category','Priority','Status','Owner','Raised','Resolution'],
+            ...items.map((item, idx) => [
+                'I-' + String(idx + 1).padStart(3, '0'),
+                item.title,
+                item.category || '',
+                item.priority,
+                item.status,
+                Resources.getName(item.owner),
+                this.fmt24(item.raisedDate),
+                item.resolution || ''
+            ])
+        ];
+        return { title: 'Issues Register', content, csv: csvRowsIssues };
     },
 
     /**
@@ -1282,7 +1399,19 @@ ${escapeHtml(comm.template)}
             content += `</div>`;
         }
 
-        return { title: 'Decision Log', content };
+        const csvRowsDecisions = [
+            ['ID','Title','Status','Decision Made','Decided By','Impact','Raised'],
+            ...items.map((item, idx) => [
+                'D-' + String(idx + 1).padStart(3, '0'),
+                item.title,
+                item.status,
+                item.decisionMade || '',
+                Resources.getName(item.decidedBy),
+                item.impact || '',
+                this.fmt24(item.raisedDate)
+            ])
+        ];
+        return { title: 'Decision Log', content, csv: csvRowsDecisions };
     },
 
     /**
@@ -1400,7 +1529,19 @@ ${escapeHtml(comm.template)}
             content += `</div>`;
         }
 
-        return { title: 'Actions Register', content };
+        const csvRowsActions = [
+            ['ID','Title','Priority','Status','Owner','Due Date','Linked Item'],
+            ...items.map((item, idx) => [
+                'A-' + String(idx + 1).padStart(3, '0'),
+                item.title,
+                item.priority,
+                item.status,
+                Resources.getName(item.owner),
+                item.dueDate ? this.fmt24(item.dueDate) : '',
+                item.linkedItem || ''
+            ])
+        ];
+        return { title: 'Actions Register', content, csv: csvRowsActions };
     },
 
     /**
@@ -1531,7 +1672,38 @@ ${escapeHtml(comm.template)}
             </div>
         `;
 
-        return { title: 'Task Performance Report', content };
+        const csvRowsPerf = [
+            ['Task ID','Task Name','Assignee','Status',
+             'Planned Start','Actual Start','Start Variance (s)',
+             'Planned End','Actual End','End Variance (s)',
+             'Planned Duration','Actual Duration','Duration Variance (s)'],
+            ...tasks.map(task => {
+                const plannedDurSecs = task.durationSeconds || 0;
+                let actualDurSecs = 0;
+                if (task.actualStart && task.actualEnd) {
+                    actualDurSecs = Math.round((new Date(task.actualEnd) - new Date(task.actualStart)) / 1000);
+                }
+                const sv = this._variance(task.startDate, task.actualStart);
+                const ev = this._variance(task.endDate, task.actualEnd);
+                const dv = actualDurSecs > 0 && plannedDurSecs > 0 ? actualDurSecs - plannedDurSecs : '';
+                return [
+                    task.taskNumber || '',
+                    task.name,
+                    Resources.getName(task.assignee),
+                    task.status,
+                    this.fmt24(task.startDate),
+                    task.actualStart ? this.fmt24(task.actualStart) : '',
+                    sv.secs !== null ? sv.secs : '',
+                    this.fmt24(task.endDate),
+                    task.actualEnd ? this.fmt24(task.actualEnd) : '',
+                    ev.secs !== null ? ev.secs : '',
+                    this.fmtDuration(plannedDurSecs),
+                    actualDurSecs > 0 ? this.fmtDuration(actualDurSecs) : '',
+                    dv
+                ];
+            })
+        ];
+        return { title: 'Task Performance Report', content, csv: csvRowsPerf };
     },
 
     /**
@@ -1550,5 +1722,132 @@ ${escapeHtml(comm.template)}
         const label = this.fmtDuration(abs);
         if (secs < 0) return { html: `<span style="color:var(--success)">-${label} early</span>`, secs };
         return { html: `<span style="color:var(--danger)">+${label} late</span>`, secs };
+    },
+
+    /**
+     * 13. Overdue Tasks Report
+     * Shows all tasks whose planned start date has passed and that are not completed.
+     */
+    generateTaskOverdueReport() {
+        const now = new Date();
+        const allTasks = Tasks.sortByDate(Tasks.getAll());
+
+        // A task is overdue if startDate < now AND status is not 'completed'
+        const overdue = allTasks.filter(t =>
+            t.startDate && new Date(t.startDate) < now && t.status !== 'completed'
+        );
+
+        // Sort by startDate ascending so the most overdue appear first
+        overdue.sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+        let content = this.getReportHeader(
+            'Overdue Tasks Report',
+            `Tasks whose planned start has passed but are not yet completed — generated at ${this.fmt24(now.toISOString())}`
+        );
+
+        // Summary stats
+        const notStarted = overdue.filter(t => !t.actualStart).length;
+        const inProgress = overdue.filter(t => t.actualStart && !t.actualEnd).length;
+        const blocked    = overdue.filter(t => t.status === 'blocked').length;
+
+        content += `
+            <div class="report-section">
+                <h2>Summary</h2>
+                <div class="report-stats">
+                    <div class="report-stat">
+                        <div class="stat-value">${overdue.length}</div>
+                        <div class="stat-label">Overdue Tasks</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="stat-value">${notStarted}</div>
+                        <div class="stat-label">Not Yet Started</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="stat-value">${inProgress}</div>
+                        <div class="stat-label">In Progress</div>
+                    </div>
+                    <div class="report-stat">
+                        <div class="stat-value">${blocked}</div>
+                        <div class="stat-label">Blocked</div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        if (overdue.length === 0) {
+            content += `
+                <div class="report-section">
+                    <p style="color:var(--success); font-weight:600;">No overdue tasks — all tasks are on schedule or completed.</p>
+                </div>
+            `;
+            return { title: 'Overdue Tasks Report', content, csv: [['Task ID','Task Name','Priority','Assignee','Category','Status','Planned Start','Overdue By','Planned End','Notes']] };
+        }
+
+        content += `
+            <div class="report-section">
+                <h2>Overdue Task Detail</h2>
+                <table class="report-table">
+                    <thead>
+                        <tr>
+                            <th>Task ID</th>
+                            <th>Task Name</th>
+                            <th>Priority</th>
+                            <th>Assignee</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Planned Start</th>
+                            <th>Overdue By</th>
+                            <th>Planned End</th>
+                            <th>Notes</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        overdue.forEach(task => {
+            const overdueMs  = now - new Date(task.startDate);
+            const overdueSecs = Math.round(overdueMs / 1000);
+
+            content += `
+                <tr>
+                    <td><span class="task-number-badge">${escapeHtml(task.taskNumber || '-')}</span></td>
+                    <td>${task.milestone ? '🔹 ' : ''}${escapeHtml(task.name)}</td>
+                    <td><span class="priority-badge ${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span></td>
+                    <td>${escapeHtml(Resources.getName(task.assignee))}</td>
+                    <td>${this.catBadge(task.category)}</td>
+                    <td>${this.statusBadge(task.status)}</td>
+                    <td style="white-space:nowrap;font-family:monospace;">${this.fmt24(task.startDate)}</td>
+                    <td style="white-space:nowrap;color:var(--danger);font-weight:600;">${this.fmtDuration(overdueSecs)}</td>
+                    <td style="white-space:nowrap;font-family:monospace;">${this.fmt24(task.endDate)}</td>
+                    <td>${escapeHtml(task.notes || '')}</td>
+                </tr>
+            `;
+        });
+
+        content += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        const csvRowsOverdue = [
+            ['Task ID','Task Name','Priority','Assignee','Category','Status','Planned Start','Overdue By','Planned End','Notes'],
+            ...overdue.map(task => {
+                const overdueSecs = Math.round((now - new Date(task.startDate)) / 1000);
+                return [
+                    task.taskNumber || '',
+                    task.name,
+                    task.priority,
+                    Resources.getName(task.assignee),
+                    task.category || '',
+                    task.status,
+                    this.fmt24(task.startDate),
+                    this.fmtDuration(overdueSecs),
+                    this.fmt24(task.endDate),
+                    task.notes || ''
+                ];
+            })
+        ];
+        return { title: 'Overdue Tasks Report', content, csv: csvRowsOverdue };
     }
 };

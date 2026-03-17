@@ -529,7 +529,8 @@ a:hover {
     flex-wrap: wrap;
 }
 
-.view-filters select {
+.view-filters select,
+.view-filters .msf-btn {
     padding: 8px 12px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius);
@@ -1110,6 +1111,66 @@ a:hover {
     color: var(--text-primary);
     font-size: 0.9rem;
 }
+
+/* Multi-select filter dropdown */
+.msf-wrap {
+    position: relative;
+    display: inline-block;
+}
+.msf-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 1px solid var(--border-color, var(--border));
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    white-space: nowrap;
+    user-select: none;
+    min-width: 120px;
+}
+.msf-btn:hover { border-color: var(--accent-primary); }
+.msf-btn.msf-active { border-color: var(--accent-primary); }
+.msf-btn-arrow { margin-left: auto; font-size: 0.7rem; opacity: 0.6; }
+.msf-badge {
+    background: var(--accent-primary);
+    color: #fff;
+    border-radius: 10px;
+    padding: 1px 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-left: 2px;
+}
+.msf-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    min-width: 180px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color, var(--border));
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 9999;
+    max-height: 260px;
+    overflow-y: auto;
+}
+.msf-wrap.msf-open .msf-dropdown { display: block; }
+.msf-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 12px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    color: var(--text-primary);
+}
+.msf-item:hover { background: var(--bg-tertiary); }
+.msf-item input[type="checkbox"] { cursor: pointer; margin: 0; }
+.msf-item.msf-all-item { border-bottom: 1px solid var(--border-color, var(--border)); font-style: italic; }
 
 /* Overdue highlight for action rows */
 .overdue-row {
@@ -2854,6 +2915,71 @@ a:hover {
     height: 15px;
     cursor: pointer;
     accent-color: var(--accent-primary);
+}
+
+/* Group-by toolbar */
+.task-groupby-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+.groupby-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    margin-right: 2px;
+}
+.btn-groupby {
+    padding: 5px 11px;
+    font-size: 0.8rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius);
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-groupby:hover {
+    border-color: var(--accent-primary);
+    color: var(--text-primary);
+}
+.btn-groupby.active {
+    background: var(--accent-primary);
+    border-color: var(--accent-primary);
+    color: #fff;
+    font-weight: 600;
+}
+
+/* Group header rows inside the tasks table */
+.tasks-table tr.task-group-header td {
+    background: var(--bg-tertiary);
+    font-weight: 700;
+    font-size: 0.82rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    padding: 6px 16px;
+    border-top: 2px solid var(--border-color);
+    cursor: pointer;
+    user-select: none;
+}
+.tasks-table tr.task-group-header td .group-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.tasks-table tr.task-group-header td .group-toggle {
+    font-size: 0.7rem;
+    opacity: 0.6;
+    transition: transform 0.15s;
+}
+.tasks-table tr.task-group-header.collapsed td .group-toggle {
+    transform: rotate(-90deg);
+}
+.tasks-table tr.task-group-member.group-collapsed {
+    display: none;
 }
 
 /* Hide task table columns via JS-applied class */

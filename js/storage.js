@@ -57,7 +57,8 @@ const Storage = {
             DECISIONS_COL_WIDTHS:        `${ns}_decisions_col_widths`,
             ACTIONS_COL_WIDTHS:          `${ns}_actions_col_widths`,
             ISSUE_CATEGORIES: `${ns}_issue_categories`,
-            LOCKED:           `${ns}_locked`
+            LOCKED:           `${ns}_locked`,
+            SETTINGS:         `${ns}_settings`
         };
     },
 

@@ -198,25 +198,10 @@
             <section class="view" id="tasksView">
                 <div class="view-header">
                     <div class="view-filters">
-                        <select id="taskCategoryFilter">
-                            <option value="all">All Categories</option>
-                            <!-- populated dynamically -->
-                        </select>
-                        <select id="taskStatusFilter">
-                            <option value="all">All Status</option>
-                            <!-- populated dynamically -->
-                        </select>
-                        <select id="taskPriorityFilter">
-                            <option value="all">All Priorities</option>
-                            <option value="critical">Critical</option>
-                            <option value="high">High</option>
-                            <option value="medium">Medium</option>
-                            <option value="low">Low</option>
-                        </select>
-                        <select id="taskAssigneeFilter">
-                            <option value="all">All Assignees</option>
-                            <!-- populated dynamically -->
-                        </select>
+                        <div class="msf-wrap" id="taskCategoryFilter"></div>
+                        <div class="msf-wrap" id="taskStatusFilter"></div>
+                        <div class="msf-wrap" id="taskPriorityFilter"></div>
+                        <div class="msf-wrap" id="taskAssigneeFilter"></div>
                     </div>
                     <span class="tasks-total-duration" id="tasksTotalDuration" title="Click to see breakdown by category" onclick="App.showDurationBreakdown()"></span>
                     <button class="btn-primary" id="addTaskBtn">+ Add Task</button>
@@ -239,6 +224,14 @@
                             <label><input type="checkbox" data-col="10"> Actual Start</label>
                             <label><input type="checkbox" data-col="11"> Actual End</label>
                         </div>
+                    </div>
+                    <div class="task-groupby-bar">
+                        <span class="groupby-label">Group by:</span>
+                        <button class="btn-groupby active" data-group="none">None</button>
+                        <button class="btn-groupby" data-group="category">Category</button>
+                        <button class="btn-groupby" data-group="status">Status</button>
+                        <button class="btn-groupby" data-group="assignee">Assignee</button>
+                        <button class="btn-groupby" data-group="dependency">Dependency</button>
                     </div>
                 </div>
                 <!-- Mass-action bar (visible when rows are selected) -->
@@ -336,18 +329,8 @@
             <section class="view" id="risksView">
                 <div class="view-header">
                     <div class="view-filters">
-                        <select id="riskSeverityFilter">
-                            <option value="all">All Severities</option>
-                            <option value="high">High</option>
-                            <option value="medium">Medium</option>
-                            <option value="low">Low</option>
-                        </select>
-                        <select id="riskStatusFilter">
-                            <option value="all">All Status</option>
-                            <option value="open">Open</option>
-                            <option value="mitigated">Mitigated</option>
-                            <option value="closed">Closed</option>
-                        </select>
+                        <div class="msf-wrap" id="riskSeverityFilter"></div>
+                        <div class="msf-wrap" id="riskStatusFilter"></div>
                     </div>
                     <button class="btn-primary" id="addRiskBtn">+ Add Risk</button>
                     <button class="btn-secondary" data-export-csv="risks">📊 Export CSV</button>
@@ -495,24 +478,9 @@
                     <button class="btn-secondary" data-import-csv="issues">📥 Import CSV</button>
                 </div>
                 <div class="filters-bar">
-                    <select id="issueStatusFilter">
-                        <option value="">All Statuses</option>
-                        <option value="open">Open</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="blocked">Blocked</option>
-                        <option value="resolved">Resolved</option>
-                        <option value="closed">Closed</option>
-                    </select>
-                    <select id="issuePriorityFilter">
-                        <option value="">All Priorities</option>
-                        <option value="critical">Critical</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                    </select>
-                    <select id="issueCategoryFilter">
-                        <option value="">All Categories</option>
-                    </select>
+                    <div class="msf-wrap" id="issueStatusFilter"></div>
+                    <div class="msf-wrap" id="issuePriorityFilter"></div>
+                    <div class="msf-wrap" id="issueCategoryFilter"></div>
                 </div>
                 <div class="data-table-container">
                     <table class="data-table" id="issuesTable">
@@ -543,13 +511,7 @@
                     <button class="btn-secondary" data-import-csv="decisions">📥 Import CSV</button>
                 </div>
                 <div class="filters-bar">
-                    <select id="decisionStatusFilter">
-                        <option value="">All Statuses</option>
-                        <option value="pending">Pending</option>
-                        <option value="approved">Approved</option>
-                        <option value="rejected">Rejected</option>
-                        <option value="deferred">Deferred</option>
-                    </select>
+                    <div class="msf-wrap" id="decisionStatusFilter"></div>
                 </div>
                 <div class="data-table-container">
                     <table class="data-table" id="decisionsTable">
@@ -579,19 +541,8 @@
                     <button class="btn-secondary" data-import-csv="actions">📥 Import CSV</button>
                 </div>
                 <div class="filters-bar">
-                    <select id="actionStatusFilter">
-                        <option value="">All Statuses</option>
-                        <option value="open">Open</option>
-                        <option value="in-progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                    </select>
-                    <select id="actionPriorityFilter">
-                        <option value="">All Priorities</option>
-                        <option value="critical">Critical</option>
-                        <option value="high">High</option>
-                        <option value="medium">Medium</option>
-                        <option value="low">Low</option>
-                    </select>
+                    <div class="msf-wrap" id="actionStatusFilter"></div>
+                    <div class="msf-wrap" id="actionPriorityFilter"></div>
                 </div>
                 <div class="data-table-container">
                     <table class="data-table" id="actionsTable">
@@ -689,6 +640,12 @@
                         <div class="report-icon">⏱️</div>
                         <h3>Task Performance Report</h3>
                         <p>Actual vs planned start, end and duration for all tasks</p>
+                        <button class="btn-primary generate-report">Generate Report</button>
+                    </div>
+                    <div class="report-card" data-report="task-overdue">
+                        <div class="report-icon">🔴</div>
+                        <h3>Overdue Tasks Report</h3>
+                        <p>Tasks whose planned start has passed but are not yet completed</p>
                         <button class="btn-primary generate-report">Generate Report</button>
                     </div>
                 </div>
@@ -1317,6 +1274,14 @@
                         </label>
                     </div>
 
+                    <div class="form-group lock-toggle-row">
+                        <label class="lock-toggle-label" for="settingsAutoProgress">
+                            <span>⚡ Auto-Progress Successors</span>
+                            <input type="checkbox" id="settingsAutoProgress">
+                            <span class="lock-toggle-desc">When a task is marked completed, any successor tasks that depend solely on completed tasks will automatically move to In Progress.</span>
+                        </label>
+                    </div>
+
                     <div class="form-section">
                         <h3>📂 Categories</h3>
                         <p class="help-text">Define task categories. Pick a color for each badge. The slug is set at creation and won't change on rename.</p>
@@ -1372,6 +1337,7 @@
             </div>
             <div class="modal-footer">
                 <button class="btn-secondary modal-cancel">Close</button>
+                <button class="btn-secondary" id="downloadCsvReportBtn" style="display:none;">⬇ Download CSV</button>
                 <button class="btn-primary" id="printReportBtn">🖨️ Print Report</button>
             </div>
         </div>
