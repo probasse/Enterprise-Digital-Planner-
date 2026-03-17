@@ -2317,6 +2317,7 @@ const App = {
         this.populateIssueCategoryDropdown('issueCategory', issue?.category);
         document.getElementById('issuePriority').value = issue?.priority || 'medium';
         document.getElementById('issueStatus').value = issue?.status || 'open';
+        document.getElementById('issueDueDate').value = issue?.dueDate ? this.toLocalInput(issue.dueDate) : '';
         document.getElementById('issueResolution').value = issue?.resolution || '';
         this.populateAssigneeDropdown('issueOwner', issue?.owner);
 
@@ -2343,6 +2344,7 @@ const App = {
     saveIssue() {
         if (this._assertNotLocked()) return;
         const id = document.getElementById('issueId').value;
+        const dueDateLocal = document.getElementById('issueDueDate').value;
         const data = {
             title: document.getElementById('issueTitle').value,
             description: document.getElementById('issueDescription').value,
@@ -2350,6 +2352,7 @@ const App = {
             priority: document.getElementById('issuePriority').value,
             status: document.getElementById('issueStatus').value,
             owner: document.getElementById('issueOwner').value,
+            dueDate: dueDateLocal ? this.fromLocalInput(dueDateLocal) : '',
             resolution: document.getElementById('issueResolution').value
         };
         if (id) {
@@ -2557,6 +2560,7 @@ const App = {
         document.getElementById('actionStatus').value = action?.status || 'open';
         document.getElementById('actionDueDate').value = action?.dueDate ? this.toLocalInput(action.dueDate) : '';
         document.getElementById('actionLinkedItem').value = action?.linkedItem || '';
+        document.getElementById('actionNotes').value = action?.notes || '';
         this.populateAssigneeDropdown('actionOwner', action?.owner);
 
         const historyEl = document.getElementById('actionStatusHistory');
@@ -2590,7 +2594,8 @@ const App = {
             status: document.getElementById('actionStatus').value,
             owner: document.getElementById('actionOwner').value,
             dueDate: dueDateLocal ? this.fromLocalInput(dueDateLocal) : '',
-            linkedItem: document.getElementById('actionLinkedItem').value
+            linkedItem: document.getElementById('actionLinkedItem').value,
+            notes: document.getElementById('actionNotes').value
         };
         if (id) {
             Actions.update(id, data);
@@ -2807,7 +2812,7 @@ const App = {
             },
             decisions: {
                 filename: `${projName}-decisions-${date}.csv`,
-                headers: ['ID','Title','Status','Decided By','Impact','Options Considered','Decision Made','Created Date','Decided Date','Description'],
+                headers: ['ID','Title','Status','Decided By','Impact','Options Considered','Decision Made','Raised Date','Description'],
                 rows: () => Decisions.getAll().map((item, i) => [
                     `D-${String(i + 1).padStart(3, '0')}`,
                     item.title || '',
@@ -2816,8 +2821,7 @@ const App = {
                     item.impact || '',
                     item.optionsConsidered || '',
                     item.decisionMade || '',
-                    this.formatDateTime24(item.createdDate),
-                    item.decidedDate ? this.formatDateTime24(item.decidedDate) : '',
+                    this.formatDateTime24(item.raisedDate),
                     item.description || ''
                 ])
             },
@@ -2874,7 +2878,10 @@ const App = {
                 headers: ['Category','Criteria','Status'],
                 rows: () => {
                     const gng = GoNoGo.get();
-                    const rows = [];
+                    const rows = [
+                        ['#DECISION', gng.decision || 'pending', ''],
+                        ['#NOTES', gng.notes || '', '']
+                    ];
                     ['technical','business','operational','resource'].forEach(cat => {
                         (gng.criteria[cat] || []).forEach(item => {
                             rows.push([cat, item.text || '', item.status || '']);
@@ -3083,6 +3090,8 @@ const App = {
                     assignee: resolveResource(col(row, 'Assignee')),
                     startDate: this._csvParseDate(col(row, 'Planned Start')),
                     endDate: this._csvParseDate(col(row, 'Planned End')),
+                    actualStart: this._csvParseDate(col(row, 'Actual Start')) || null,
+                    actualEnd: this._csvParseDate(col(row, 'Actual End')) || null,
                     milestone: col(row, 'Milestone').toLowerCase() === 'yes',
                     description: col(row, 'Description') || '',
                     dependencies: []
@@ -3157,7 +3166,8 @@ const App = {
                     impact: col(row, 'Impact') || '',
                     mitigation: col(row, 'Mitigation') || '',
                     owner: resolveResource(col(row, 'Owner')),
-                    status: col(row, 'Status') || 'open'
+                    status: col(row, 'Status') || 'open',
+                    createdAt: this._csvParseDate(col(row, 'Created')) || new Date().toISOString()
                 });
                 count++;
             });
@@ -3190,8 +3200,7 @@ const App = {
                     impact: col(row, 'Impact') || '',
                     optionsConsidered: col(row, 'Options Considered') || '',
                     decisionMade: col(row, 'Decision Made') || '',
-                    createdDate: this._csvParseDate(col(row, 'Created Date')),
-                    decidedDate: this._csvParseDate(col(row, 'Decided Date')),
+                    raisedDate: this._csvParseDate(col(row, 'Raised Date')),
                     description: col(row, 'Description') || ''
                 });
                 count++;
@@ -3253,15 +3262,24 @@ const App = {
         } else if (type === 'gonogo') {
             const validCats = ['technical','business','operational','resource'];
             dataRows.forEach(row => {
-                const cat = (col(row, 'Category') || '').trim().toLowerCase();
-                const text = col(row, 'Criteria');
-                const status = col(row, 'Status') || 'pending';
-                if (!text || !validCats.includes(cat)) return;
-                const criteria = GoNoGo.addCriteria(cat, text);
-                if (status !== 'pending') {
-                    GoNoGo.updateCriteriaStatus(cat, criteria.id, status);
+                const first = (row[0] || '').trim();
+                if (first === '#DECISION') {
+                    const gng = GoNoGo.get();
+                    gng.decision = (row[1] || 'pending').trim();
+                    GoNoGo.save(gng);
+                } else if (first === '#NOTES') {
+                    GoNoGo.updateNotes((row[1] || '').trim());
+                } else {
+                    const cat = first.toLowerCase();
+                    const text = col(row, 'Criteria');
+                    const status = col(row, 'Status') || 'pending';
+                    if (!text || !validCats.includes(cat)) return;
+                    const criteria = GoNoGo.addCriteria(cat, text);
+                    if (status !== 'pending') {
+                        GoNoGo.updateCriteriaStatus(cat, criteria.id, status);
+                    }
+                    count++;
                 }
-                count++;
             });
         }
         return count;

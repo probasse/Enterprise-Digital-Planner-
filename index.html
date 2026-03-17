@@ -1086,6 +1086,10 @@
                         </div>
                     </div>
                     <div class="form-group">
+                        <label for="issueDueDate">Due Date</label>
+                        <input type="datetime-local" id="issueDueDate">
+                    </div>
+                    <div class="form-group">
                         <label for="issueResolution">Resolution</label>
                         <textarea id="issueResolution" rows="2" placeholder="How was the issue resolved?"></textarea>
                     </div>
@@ -1216,6 +1220,10 @@
                     <div class="form-group">
                         <label for="actionLinkedItem">Linked Item (Issue/Risk/Task ID)</label>
                         <input type="text" id="actionLinkedItem" placeholder="e.g. T-010 or risk reference">
+                    </div>
+                    <div class="form-group">
+                        <label for="actionNotes">Notes</label>
+                        <textarea id="actionNotes" rows="2" placeholder="Additional notes"></textarea>
                     </div>
                     <!-- Status history — rendered by app.js when editing an existing action -->
                     <div id="actionStatusHistory" style="display:none;">
