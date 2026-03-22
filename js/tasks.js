@@ -208,6 +208,15 @@ const Tasks = {
         return result;
     },
 
+    getLinkedItems(taskId) {
+        const items = [];
+        Issues.getAll().forEach(i => { if (i.linkedTaskId === taskId) items.push({ type: 'issue', id: i.id, title: i.title, status: i.status }); });
+        Decisions.getAll().forEach(d => { if (d.linkedTaskId === taskId) items.push({ type: 'decision', id: d.id, title: d.title, status: d.status }); });
+        Actions.getAll().forEach(a => { if (a.linkedTaskId === taskId) items.push({ type: 'action', id: a.id, title: a.title, status: a.status }); });
+        Risks.getAll().forEach(r => { if (r.linkedTaskId === taskId) items.push({ type: 'risk', id: r.id, title: r.description, status: r.status }); });
+        return items;
+    },
+
     /**
      * Get progress by category
      */

@@ -2518,6 +2518,248 @@ a:hover {
 }
 
 /* ==========================================
+   View Toggle
+   ========================================== */
+.view-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    overflow: hidden;
+    margin-left: 8px;
+}
+.view-toggle-btn {
+    padding: 6px 12px;
+    border: none;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text-secondary);
+    transition: all 0.15s;
+}
+.view-toggle-btn.active {
+    background: var(--accent-primary);
+    color: #fff;
+}
+.view-toggle-btn:not(.active):hover {
+    background: var(--bg-tertiary);
+}
+
+/* ==========================================
+   Kanban Board
+   ========================================== */
+.kanban-board {
+    display: flex;
+    gap: 16px;
+    overflow-x: auto;
+    padding: 16px 0;
+    min-height: 400px;
+    align-items: flex-start;
+}
+.kanban-column {
+    min-width: 260px;
+    max-width: 300px;
+    flex: 1;
+    background: var(--bg-secondary);
+    border-radius: var(--border-radius-lg);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 220px);
+}
+.kanban-column-header {
+    padding: 12px 14px;
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+.kanban-column-header .kanban-count {
+    background: rgba(255,255,255,0.3);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+}
+.kanban-column-body {
+    padding: 8px;
+    overflow-y: auto;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 60px;
+}
+.kanban-card {
+    background: var(--bg-primary);
+    border-radius: var(--border-radius);
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-left: 4px solid var(--text-muted);
+    cursor: grab;
+    transition: box-shadow 0.15s, transform 0.1s;
+    user-select: none;
+}
+.kanban-card:hover {
+    box-shadow: 0 2px 8px var(--shadow-color);
+    transform: translateY(-1px);
+}
+.kanban-card.dragging {
+    opacity: 0.4;
+}
+.kanban-card-number {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.kanban-card-title {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    word-wrap: break-word;
+}
+.kanban-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    align-items: center;
+    font-size: 0.7rem;
+}
+.kanban-column.drag-over {
+    outline: 2px dashed var(--accent-primary);
+    outline-offset: -2px;
+}
+.kanban-column.drag-over .kanban-column-body {
+    background: color-mix(in srgb, var(--accent-primary) 5%, transparent);
+}
+.kanban-empty {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    text-align: center;
+    padding: 20px 10px;
+    font-style: italic;
+}
+
+/* Linked Items */
+.linked-items-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.linked-item-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.linked-item-badge:hover {
+    background: var(--bg-secondary);
+    border-color: var(--accent-primary);
+}
+.linked-task-ref {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: var(--info-bg);
+    color: var(--info);
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    cursor: pointer;
+    vertical-align: middle;
+}
+.linked-task-ref:hover {
+    background: var(--info);
+    color: #fff;
+}
+
+/* Sync Badge */
+.sync-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+}
+.sync-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+.sync-dot.online { background: var(--success); }
+.sync-dot.offline { background: var(--text-muted); }
+.sync-dot.connecting, .sync-dot.syncing {
+    background: var(--warning);
+    animation: pulse-dot 1s infinite;
+}
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+.sync-label { color: var(--text-secondary); }
+.auth-badge {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+}
+
+/* Sync Overlay */
+.sync-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.sync-overlay-content {
+    background: var(--bg-secondary);
+    padding: 40px;
+    border-radius: var(--border-radius-lg);
+    text-align: center;
+    box-shadow: 0 4px 20px var(--shadow-color);
+}
+.sync-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--border-color);
+    border-top-color: var(--accent-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 16px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Firebase config form rows */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+/* ==========================================
    Print Styles
    ========================================== */
 @media print {

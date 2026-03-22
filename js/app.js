@@ -6,6 +6,7 @@ const App = {
     currentView: 'dashboard',
     currentReportType: 'status-dashboard',
     _taskGrouping: 'none',
+    _taskViewMode: 'list',
     _taskNameWrap: false,
 
     // ==================== MULTI-SELECT FILTER HELPERS ====================
@@ -200,6 +201,22 @@ const App = {
         this.showView('dashboard');
         this.updateCountdown();
         setInterval(() => this.updateCountdown(), 1000);
+
+        // Initialize Firebase if config exists
+        const fbConfig = localStorage.getItem(Storage.GLOBAL_KEYS.FIREBASE_CONFIG);
+        if (fbConfig) {
+            try {
+                const config = JSON.parse(fbConfig);
+                Storage.initFirestore(config);
+                const authSection = document.getElementById('firebaseAuthSection');
+                const disconnectBtn = document.getElementById('disconnectFirebase');
+                if (authSection) authSection.style.display = '';
+                if (disconnectBtn) disconnectBtn.style.display = '';
+                this._initFirebaseAuthListener();
+            } catch (e) {
+                console.error('Firebase auto-init failed:', e);
+            }
+        }
     },
 
     /**
@@ -257,7 +274,7 @@ const App = {
                 this.renderDashboard();
                 break;
             case 'tasks':
-                this.renderTaskList();
+                if (this._taskViewMode === 'kanban') this.renderKanban(); else this.renderTaskList();
                 break;
             case 'resources':
                 this.renderResourceList();
@@ -504,6 +521,23 @@ const App = {
         this.bindIssueCategoryActions();
         this.renderTagsList();
         this.bindTagActions();
+        // Populate Firebase config if saved
+        const fbConfig = localStorage.getItem(Storage.GLOBAL_KEYS.FIREBASE_CONFIG);
+        if (fbConfig) {
+            try {
+                const cfg = JSON.parse(fbConfig);
+                document.getElementById('fbApiKey').value = cfg.apiKey || '';
+                document.getElementById('fbAuthDomain').value = cfg.authDomain || '';
+                document.getElementById('fbProjectId').value = cfg.projectId || '';
+                document.getElementById('fbStorageBucket').value = cfg.storageBucket || '';
+                document.getElementById('fbMessagingSenderId').value = cfg.messagingSenderId || '';
+                document.getElementById('fbAppId').value = cfg.appId || '';
+                if (Storage._firestoreReady) {
+                    document.getElementById('firebaseAuthSection').style.display = '';
+                    document.getElementById('disconnectFirebase').style.display = '';
+                }
+            } catch (e) {}
+        }
         this.openModal('settingsModal');
     },
 
@@ -859,7 +893,7 @@ const App = {
         document.getElementById('addTaskBtn').addEventListener('click', () => this.showTaskModal());
         document.getElementById('recalcDatesBtn').addEventListener('click', () => this.recalculateAllDates());
 
-        const rerender = () => this.renderTaskList();
+        const rerender = () => { if (this._taskViewMode === 'kanban') this.renderKanban(); else this.renderTaskList(); };
         const priorityOpts = [
             {value:'critical',label:'Critical'},{value:'high',label:'High'},
             {value:'medium',label:'Medium'},{value:'low',label:'Low'}
@@ -887,6 +921,11 @@ const App = {
                 document.querySelectorAll('.btn-groupby').forEach(b => b.classList.toggle('active', b === btn));
                 this.renderTaskList();
             });
+        });
+
+        // View toggle (List / Kanban)
+        document.querySelectorAll('[data-task-view]').forEach(btn => {
+            btn.addEventListener('click', () => this.toggleTaskViewMode(btn.dataset.taskView));
         });
 
         // Header select-all checkbox
@@ -1426,6 +1465,27 @@ const App = {
         this.populateTaskDependencyDropdown(task?.id, task?.dependencies || []);
         this.populateTagCheckboxes('taskTagCheckboxes', task?.tags || []);
 
+        // Linked items (read-only)
+        const linkedItemsEl = document.getElementById('taskLinkedItems');
+        const linkedItemsList = document.getElementById('taskLinkedItemsList');
+        if (task) {
+            const linked = Tasks.getLinkedItems(task.id);
+            if (linked.length > 0) {
+                const typeIcons = { issue: '🐛', decision: '🧭', action: '🔧', risk: '⚠️' };
+                linkedItemsList.innerHTML = linked.map(li =>
+                    `<span class="linked-item-badge" onclick="App.navigateToLinkedItem('${escapeHtml(li.type)}','${escapeHtml(li.id)}')" title="Open ${escapeHtml(li.type)}">
+                        ${typeIcons[li.type] || '📎'} ${escapeHtml(li.title)}
+                        <span class="status-badge ${escapeHtml(li.status)}">${escapeHtml(li.status)}</span>
+                    </span>`
+                ).join('');
+                linkedItemsEl.style.display = '';
+            } else {
+                linkedItemsEl.style.display = 'none';
+            }
+        } else {
+            linkedItemsEl.style.display = 'none';
+        }
+
         const actualDatesRow = document.getElementById('taskActualDatesRow');
         if (task && (task.actualStart || task.actualEnd)) {
             document.getElementById('taskActualStart').value = task.actualStart ? this.formatDateTime24(task.actualStart) : '-';
@@ -1671,6 +1731,117 @@ const App = {
         this.quickUpdateTaskStatus(id, statuses[0].value);
     },
 
+    // ==================== KANBAN VIEW ====================
+    toggleTaskViewMode(mode) {
+        this._taskViewMode = mode;
+        document.querySelectorAll('.view-toggle-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.taskView === mode);
+        });
+        const tableContainer = document.getElementById('tasksTableContainer');
+        const kanbanContainer = document.getElementById('kanbanView');
+        if (mode === 'kanban') {
+            if (tableContainer) tableContainer.style.display = 'none';
+            if (kanbanContainer) kanbanContainer.style.display = '';
+            this.renderKanban();
+        } else {
+            if (tableContainer) tableContainer.style.display = '';
+            if (kanbanContainer) kanbanContainer.style.display = 'none';
+            this.renderTaskList();
+        }
+    },
+
+    renderKanban() {
+        const statuses = Statuses.getAll();
+        const filters = {
+            category: this._msfGetValues('taskCategoryFilter'),
+            status: this._msfGetValues('taskStatusFilter'),
+            priority: this._msfGetValues('taskPriorityFilter'),
+            assignee: this._msfGetValues('taskAssigneeFilter')
+        };
+        let tasks = Tasks.getFiltered(filters);
+        const tagFilter = this._msfGetValues('taskTagFilter');
+        if (tagFilter.length) tasks = tasks.filter(t => (t.tags || []).some(v => tagFilter.includes(v)));
+
+        const grouped = {};
+        statuses.forEach(s => { grouped[s.value] = []; });
+        tasks.forEach(t => {
+            if (grouped[t.status]) grouped[t.status].push(t);
+            else if (statuses.length) grouped[statuses[0].value].push(t);
+        });
+
+        const html = statuses.map(status => {
+            const items = grouped[status.value] || [];
+            const cardsHtml = items.map(task => {
+                const assigneeName = Resources.getName(task.assignee);
+                const tagBadges = this.renderTagBadges(task.tags);
+                return `
+                <div class="kanban-card" draggable="true" data-task-id="${escapeHtml(task.id)}" data-status="${escapeHtml(task.status)}"
+                     onclick="App.editTask('${escapeHtml(task.id)}')"
+                     style="border-left-color: ${task.priority === 'critical' ? 'var(--danger)' : task.priority === 'high' ? '#ea580c' : task.priority === 'low' ? 'var(--success)' : 'var(--info)'};">
+                    <div class="kanban-card-number">${escapeHtml(task.taskNumber || '')}</div>
+                    <div class="kanban-card-title">${task.milestone ? '🔹 ' : ''}${escapeHtml(task.name)}</div>
+                    <div class="kanban-card-meta">
+                        <span class="priority-badge ${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span>
+                        ${assigneeName && assigneeName !== '-' ? '<span>' + escapeHtml(assigneeName) + '</span>' : ''}
+                        ${tagBadges}
+                    </div>
+                </div>`;
+            }).join('');
+
+            return `
+            <div class="kanban-column" data-status="${escapeHtml(status.value)}">
+                <div class="kanban-column-header" style="background:${escapeHtml(status.color)}; color:#fff;">
+                    <span>${escapeHtml(status.name)}</span>
+                    <span class="kanban-count">${items.length}</span>
+                </div>
+                <div class="kanban-column-body">
+                    ${cardsHtml || '<div class="kanban-empty">No tasks</div>'}
+                </div>
+            </div>`;
+        }).join('');
+
+        document.getElementById('kanbanView').innerHTML = html;
+        this._bindKanbanDrag();
+    },
+
+    _bindKanbanDrag() {
+        const board = document.getElementById('kanbanView');
+        if (!board) return;
+
+        board.querySelectorAll('.kanban-card').forEach(card => {
+            card.addEventListener('dragstart', e => {
+                e.dataTransfer.setData('text/plain', card.dataset.taskId);
+                card.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+            card.addEventListener('dragend', () => {
+                card.classList.remove('dragging');
+                board.querySelectorAll('.kanban-column').forEach(col => col.classList.remove('drag-over'));
+            });
+        });
+
+        board.querySelectorAll('.kanban-column').forEach(col => {
+            col.addEventListener('dragover', e => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                col.classList.add('drag-over');
+            });
+            col.addEventListener('dragleave', e => {
+                if (!col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+            });
+            col.addEventListener('drop', e => {
+                e.preventDefault();
+                col.classList.remove('drag-over');
+                const taskId = e.dataTransfer.getData('text/plain');
+                const newStatus = col.dataset.status;
+                if (taskId && newStatus) {
+                    this.quickUpdateTaskStatus(taskId, newStatus);
+                    this.renderKanban();
+                }
+            });
+        });
+    },
+
     /**
      * If auto-progress is enabled, find all tasks that list `completedTaskId` as a
      * dependency and whose every dependency is now completed — then move them to
@@ -1865,7 +2036,7 @@ const App = {
             return `
             <tr class="clickable-row" onclick="if(!event.target.closest('button'))App.editRisk('${escapeHtml(r.id)}')">
                 <td data-col="0">R-${String(index + 1).padStart(3, '0')}</td>
-                <td data-col="1">${escapeHtml(r.description)}${r.tags && r.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(r.tags) + '</div>' : ''}</td>
+                <td data-col="1">${escapeHtml(r.description)}${r.linkedTaskId ? ' <span class="linked-task-ref" onclick="event.stopPropagation();App.editTask(\'' + escapeHtml(r.linkedTaskId) + '\')" title="Open linked task">' + escapeHtml(Tasks.getById(r.linkedTaskId)?.taskNumber || '') + '</span>' : ''}${r.tags && r.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(r.tags) + '</div>' : ''}</td>
                 <td data-col="2"><span class="severity-badge ${escapeHtml(r.severity)}">${escapeHtml(r.severity)}</span></td>
                 <td data-col="3">${escapeHtml(r.probability)}</td>
                 <td data-col="4">${escapeHtml(r.impact) || '-'}</td>
@@ -2109,6 +2280,7 @@ const App = {
         document.getElementById('riskStatus').value = risk?.status || 'open';
         this.populateAssigneeDropdown('riskOwner', risk?.owner);
         this.populateTagCheckboxes('riskTagCheckboxes', risk?.tags || []);
+        this.populateLinkedTaskDropdown('riskLinkedTask', risk?.linkedTaskId);
 
         const historyEl = document.getElementById('riskStatusHistory');
         const historyContent = document.getElementById('riskStatusHistoryContent');
@@ -2141,7 +2313,8 @@ const App = {
             mitigation: document.getElementById('riskMitigation').value,
             owner: document.getElementById('riskOwner').value,
             status: document.getElementById('riskStatus').value,
-            tags: this.getSelectedTags('riskTagCheckboxes')
+            tags: this.getSelectedTags('riskTagCheckboxes'),
+            linkedTaskId: document.getElementById('riskLinkedTask').value || ''
         };
 
         if (id) {
@@ -2452,8 +2625,7 @@ const App = {
             return `
             <tr class="clickable-row${isBlocked ? ' overdue-row' : ''}" onclick="if(!event.target.closest('button'))App.editIssue('${escapeHtml(item.id)}')">
                 <td data-col="0">I-${String(idx + 1).padStart(3, '0')}</td>
-                <td data-col="1">${escapeHtml(item.title)}${item.tags && item.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(item.tags) + '</div>' : ''}</td>
-                <td data-col="2"><span class="category-badge" style="background-color:${escapeHtml(catColor)}20;color:${escapeHtml(catColor)};border-color:${escapeHtml(catColor)}40;">${escapeHtml(catName)}</span></td>
+                <td data-col="1">${escapeHtml(item.title)}${item.linkedTaskId ? ' <span class="linked-task-ref" onclick="event.stopPropagation();App.editTask(\'' + escapeHtml(item.linkedTaskId) + '\')" title="Open linked task">' + escapeHtml(Tasks.getById(item.linkedTaskId)?.taskNumber || '') + '</span>' : ''}${item.tags && item.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(item.tags) + '</div>' : ''}</td>
                 <td data-col="3"><span class="priority-badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority)}</span></td>
                 <td data-col="4"><span class="status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></td>
                 <td data-col="5">${escapeHtml(Resources.getName(item.owner))}</td>
@@ -2501,6 +2673,7 @@ const App = {
         document.getElementById('issueResolution').value = issue?.resolution || '';
         this.populateAssigneeDropdown('issueOwner', issue?.owner);
         this.populateTagCheckboxes('issueTagCheckboxes', issue?.tags || []);
+        this.populateLinkedTaskDropdown('issueLinkedTask', issue?.linkedTaskId);
 
         const historyEl = document.getElementById('issueStatusHistory');
         const historyContent = document.getElementById('issueStatusHistoryContent');
@@ -2535,7 +2708,8 @@ const App = {
             owner: document.getElementById('issueOwner').value,
             dueDate: dueDateLocal ? this.fromLocalInput(dueDateLocal) : '',
             resolution: document.getElementById('issueResolution').value,
-            tags: this.getSelectedTags('issueTagCheckboxes')
+            tags: this.getSelectedTags('issueTagCheckboxes'),
+            linkedTaskId: document.getElementById('issueLinkedTask').value || ''
         };
         if (id) {
             Issues.update(id, data);
@@ -2583,7 +2757,7 @@ const App = {
             return `
             <tr class="clickable-row" onclick="if(!event.target.closest('button'))App.editDecision('${escapeHtml(item.id)}')">
                 <td data-col="0">D-${String(idx + 1).padStart(3, '0')}</td>
-                <td data-col="1">${escapeHtml(item.title)}${item.tags && item.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(item.tags) + '</div>' : ''}</td>
+                <td data-col="1">${escapeHtml(item.title)}${item.linkedTaskId ? ' <span class="linked-task-ref" onclick="event.stopPropagation();App.editTask(\'' + escapeHtml(item.linkedTaskId) + '\')" title="Open linked task">' + escapeHtml(Tasks.getById(item.linkedTaskId)?.taskNumber || '') + '</span>' : ''}${item.tags && item.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(item.tags) + '</div>' : ''}</td>
                 <td data-col="2"><span class="status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></td>
                 <td data-col="3">${escapeHtml(Resources.getName(item.decidedBy))}</td>
                 <td data-col="4">${escapeHtml(item.impact || '-')}</td>
@@ -2624,6 +2798,7 @@ const App = {
         document.getElementById('decisionImpact').value = decision?.impact || '';
         this.populateAssigneeDropdown('decisionDecidedBy', decision?.decidedBy);
         this.populateTagCheckboxes('decisionTagCheckboxes', decision?.tags || []);
+        this.populateLinkedTaskDropdown('decisionLinkedTask', decision?.linkedTaskId);
 
         const historyEl = document.getElementById('decisionStatusHistory');
         const historyContent = document.getElementById('decisionStatusHistoryContent');
@@ -2656,7 +2831,8 @@ const App = {
             status: document.getElementById('decisionStatus').value,
             decidedBy: document.getElementById('decisionDecidedBy').value,
             impact: document.getElementById('decisionImpact').value,
-            tags: this.getSelectedTags('decisionTagCheckboxes')
+            tags: this.getSelectedTags('decisionTagCheckboxes'),
+            linkedTaskId: document.getElementById('decisionLinkedTask').value || ''
         };
         if (id) {
             Decisions.update(id, data);
@@ -2708,7 +2884,7 @@ const App = {
             return `
             <tr class="clickable-row${isOverdue ? ' overdue-row' : ''}" onclick="if(!event.target.closest('button'))App.editAction('${escapeHtml(item.id)}')">
                 <td data-col="0">A-${String(idx + 1).padStart(3, '0')}</td>
-                <td data-col="1">${escapeHtml(item.title)}${item.tags && item.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(item.tags) + '</div>' : ''}</td>
+                <td data-col="1">${escapeHtml(item.title)}${item.linkedTaskId ? ' <span class="linked-task-ref" onclick="event.stopPropagation();App.editTask(\'' + escapeHtml(item.linkedTaskId) + '\')" title="Open linked task">' + escapeHtml(Tasks.getById(item.linkedTaskId)?.taskNumber || '') + '</span>' : ''}${item.tags && item.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(item.tags) + '</div>' : ''}</td>
                 <td data-col="2"><span class="priority-badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority)}</span></td>
                 <td data-col="3"><span class="status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></td>
                 <td data-col="4">${escapeHtml(Resources.getName(item.owner))}</td>
@@ -2755,6 +2931,7 @@ const App = {
         document.getElementById('actionNotes').value = action?.notes || '';
         this.populateAssigneeDropdown('actionOwner', action?.owner);
         this.populateTagCheckboxes('actionTagCheckboxes', action?.tags || []);
+        this.populateLinkedTaskDropdown('actionLinkedTask', action?.linkedTaskId);
 
         const historyEl = document.getElementById('actionStatusHistory');
         const historyContent = document.getElementById('actionStatusHistoryContent');
@@ -2789,7 +2966,8 @@ const App = {
             dueDate: dueDateLocal ? this.fromLocalInput(dueDateLocal) : '',
             linkedItem: document.getElementById('actionLinkedItem').value,
             notes: document.getElementById('actionNotes').value,
-            tags: this.getSelectedTags('actionTagCheckboxes')
+            tags: this.getSelectedTags('actionTagCheckboxes'),
+            linkedTaskId: document.getElementById('actionLinkedTask').value || ''
         };
         if (id) {
             Actions.update(id, data);
@@ -2860,6 +3038,15 @@ const App = {
         document.getElementById('importData')?.addEventListener('click', () => document.getElementById('importFile').click());
         document.getElementById('importFile')?.addEventListener('change', (e) => this.importData(e));
         document.getElementById('importCsvFile')?.addEventListener('change', (e) => this.importCsv(e));
+
+        // Firebase buttons
+        document.getElementById('saveFirebaseConfig')?.addEventListener('click', () => this.saveFirebaseConfig());
+        document.getElementById('testFirebaseConnection')?.addEventListener('click', () => this.testFirebaseConnection());
+        document.getElementById('disconnectFirebase')?.addEventListener('click', () => this.disconnectFirebase());
+        document.getElementById('fbSignIn')?.addEventListener('click', () => this.fbSignIn());
+        document.getElementById('fbSignUp')?.addEventListener('click', () => this.fbSignUp());
+        document.getElementById('fbGoogleSignIn')?.addEventListener('click', () => this.fbGoogleSignIn());
+        document.getElementById('fbSignOut')?.addEventListener('click', () => this.fbSignOut());
 
         // Modal close buttons
         document.querySelectorAll('.modal-close, .modal-cancel').forEach(btn => {
@@ -2976,7 +3163,7 @@ const App = {
             },
             risks: {
                 filename: `${projName}-risks-${date}.csv`,
-                headers: ['ID','Description','Severity','Probability','Impact','Mitigation','Owner','Status','Created','Tags'],
+                headers: ['ID','Description','Severity','Probability','Impact','Mitigation','Owner','Status','Created','Tags','Linked Task'],
                 rows: () => Risks.getAll().map((r, i) => [
                     `R-${String(i + 1).padStart(3, '0')}`,
                     r.description || '',
@@ -2987,12 +3174,13 @@ const App = {
                     Resources.getName(r.owner) || '',
                     r.status || '',
                     this.formatDateTime24(r.createdAt),
-                    (r.tags || []).map(v => Tags.getName(v)).join('; ')
+                    (r.tags || []).map(v => Tags.getName(v)).join('; '),
+                    Tasks.getById(r.linkedTaskId)?.taskNumber || ''
                 ])
             },
             issues: {
                 filename: `${projName}-issues-${date}.csv`,
-                headers: ['ID','Title','Category','Priority','Status','Owner','Raised Date','Due Date','Resolution','Description','Tags'],
+                headers: ['ID','Title','Category','Priority','Status','Owner','Raised Date','Due Date','Resolution','Description','Tags','Linked Task'],
                 rows: () => Issues.getAll().map((item, i) => [
                     `I-${String(i + 1).padStart(3, '0')}`,
                     item.title || '',
@@ -3004,12 +3192,13 @@ const App = {
                     item.dueDate ? this.formatDateTime24(item.dueDate) : '',
                     item.resolution || '',
                     item.description || '',
-                    (item.tags || []).map(v => Tags.getName(v)).join('; ')
+                    (item.tags || []).map(v => Tags.getName(v)).join('; '),
+                    Tasks.getById(item.linkedTaskId)?.taskNumber || ''
                 ])
             },
             decisions: {
                 filename: `${projName}-decisions-${date}.csv`,
-                headers: ['ID','Title','Status','Decided By','Impact','Options Considered','Decision Made','Raised Date','Description','Tags'],
+                headers: ['ID','Title','Status','Decided By','Impact','Options Considered','Decision Made','Raised Date','Description','Tags','Linked Task'],
                 rows: () => Decisions.getAll().map((item, i) => [
                     `D-${String(i + 1).padStart(3, '0')}`,
                     item.title || '',
@@ -3020,12 +3209,13 @@ const App = {
                     item.decisionMade || '',
                     this.formatDateTime24(item.raisedDate),
                     item.description || '',
-                    (item.tags || []).map(v => Tags.getName(v)).join('; ')
+                    (item.tags || []).map(v => Tags.getName(v)).join('; '),
+                    Tasks.getById(item.linkedTaskId)?.taskNumber || ''
                 ])
             },
             actions: {
                 filename: `${projName}-actions-${date}.csv`,
-                headers: ['ID','Title','Priority','Status','Owner','Due Date','Linked Item','Notes','Description','Tags'],
+                headers: ['ID','Title','Priority','Status','Owner','Due Date','Linked Item','Notes','Description','Tags','Linked Task'],
                 rows: () => Actions.getAll().map((item, i) => [
                     `A-${String(i + 1).padStart(3, '0')}`,
                     item.title || '',
@@ -3036,7 +3226,8 @@ const App = {
                     item.linkedItem || '',
                     item.notes || '',
                     item.description || '',
-                    (item.tags || []).map(v => Tags.getName(v)).join('; ')
+                    (item.tags || []).map(v => Tags.getName(v)).join('; '),
+                    Tasks.getById(item.linkedTaskId)?.taskNumber || ''
                 ])
             },
             communications: {
@@ -3259,6 +3450,12 @@ const App = {
             });
         };
 
+        const resolveLinkedTask = (ref) => {
+            if (!ref) return '';
+            const task = Tasks.getByTaskNumber(ref.trim());
+            return task ? task.id : '';
+        };
+
         // Helper: find or auto-create a resource by name, return its id
         const resolveResource = (nameRaw) => {
             if (!nameRaw) return '';
@@ -3379,7 +3576,8 @@ const App = {
                     owner: resolveResource(col(row, 'Owner')),
                     status: col(row, 'Status') || 'open',
                     createdAt: this._csvParseDate(col(row, 'Created')) || new Date().toISOString(),
-                    tags: resolveTags(col(row, 'Tags'))
+                    tags: resolveTags(col(row, 'Tags')),
+                    linkedTaskId: resolveLinkedTask(col(row, 'Linked Task'))
                 });
                 count++;
             });
@@ -3398,7 +3596,8 @@ const App = {
                     dueDate: this._csvParseDate(col(row, 'Due Date')),
                     resolution: col(row, 'Resolution') || '',
                     description: col(row, 'Description') || '',
-                    tags: resolveTags(col(row, 'Tags'))
+                    tags: resolveTags(col(row, 'Tags')),
+                    linkedTaskId: resolveLinkedTask(col(row, 'Linked Task'))
                 });
                 count++;
             });
@@ -3415,7 +3614,8 @@ const App = {
                     decisionMade: col(row, 'Decision Made') || '',
                     raisedDate: this._csvParseDate(col(row, 'Raised Date')),
                     description: col(row, 'Description') || '',
-                    tags: resolveTags(col(row, 'Tags'))
+                    tags: resolveTags(col(row, 'Tags')),
+                    linkedTaskId: resolveLinkedTask(col(row, 'Linked Task'))
                 });
                 count++;
             });
@@ -3432,7 +3632,8 @@ const App = {
                     linkedItem: col(row, 'Linked Item') || '',
                     notes: col(row, 'Notes') || '',
                     description: col(row, 'Description') || '',
-                    tags: resolveTags(col(row, 'Tags'))
+                    tags: resolveTags(col(row, 'Tags')),
+                    linkedTaskId: resolveLinkedTask(col(row, 'Linked Task'))
                 });
                 count++;
             });
@@ -3819,6 +4020,21 @@ const App = {
         );
     },
 
+    populateLinkedTaskDropdown(selectId, selectedTaskId = '') {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        const tasks = Tasks.getAll();
+        select.innerHTML = '<option value="">-- None --</option>' +
+            tasks.map(t => `<option value="${escapeHtml(t.id)}" ${t.id === selectedTaskId ? 'selected' : ''}>${escapeHtml(t.taskNumber || t.id)} — ${escapeHtml(t.name)}</option>`).join('');
+    },
+
+    navigateToLinkedItem(type, id) {
+        if (type === 'issue') this.editIssue(id);
+        else if (type === 'decision') this.editDecision(id);
+        else if (type === 'action') this.editAction(id);
+        else if (type === 'risk') this.editRisk(id);
+    },
+
     populateTaskDependencyDropdown(currentTaskId, selectedIds = []) {
         const select = document.getElementById('taskDependencies');
         if (!select) return;
@@ -4017,6 +4233,151 @@ const App = {
                 if (name) IssueCategories.update(id, name, e.target.value);
                 if (swatch) swatch.style.backgroundColor = e.target.value;
             };
+        });
+    },
+
+    // ==================== FIREBASE ====================
+
+    saveFirebaseConfig() {
+        const config = {
+            apiKey: document.getElementById('fbApiKey').value.trim(),
+            authDomain: document.getElementById('fbAuthDomain').value.trim(),
+            projectId: document.getElementById('fbProjectId').value.trim(),
+            storageBucket: document.getElementById('fbStorageBucket').value.trim(),
+            messagingSenderId: document.getElementById('fbMessagingSenderId').value.trim(),
+            appId: document.getElementById('fbAppId').value.trim()
+        };
+        if (!config.apiKey || !config.projectId) {
+            alert('API Key and Project ID are required.');
+            return;
+        }
+        localStorage.setItem(Storage.GLOBAL_KEYS.FIREBASE_CONFIG, JSON.stringify(config));
+        const ok = Storage.initFirestore(config);
+        if (ok) {
+            this._updateSyncBadge('connecting');
+            document.getElementById('firebaseAuthSection').style.display = '';
+            document.getElementById('disconnectFirebase').style.display = '';
+            this._initFirebaseAuthListener();
+            alert('Firebase connected! Now sign in to start syncing.');
+        } else {
+            alert('Failed to initialize Firebase. Check your config.');
+        }
+    },
+
+    testFirebaseConnection() {
+        const config = {
+            apiKey: document.getElementById('fbApiKey').value.trim(),
+            projectId: document.getElementById('fbProjectId').value.trim(),
+            authDomain: document.getElementById('fbAuthDomain').value.trim(),
+            storageBucket: document.getElementById('fbStorageBucket').value.trim(),
+            messagingSenderId: document.getElementById('fbMessagingSenderId').value.trim(),
+            appId: document.getElementById('fbAppId').value.trim()
+        };
+        if (!config.apiKey || !config.projectId) { alert('API Key and Project ID are required.'); return; }
+        try {
+            const testApp = firebase.initializeApp(config, 'test_' + Date.now());
+            const testDb = testApp.firestore();
+            testDb.collection('_test').doc('ping').get()
+                .then(() => { alert('Connection successful!'); testApp.delete(); })
+                .catch(err => { alert('Connection test: ' + err.message); testApp.delete(); });
+        } catch (e) {
+            alert('Config error: ' + e.message);
+        }
+    },
+
+    disconnectFirebase() {
+        if (!confirm('Disconnect Firebase? Data stays in your browser but sync stops.')) return;
+        Storage.disconnectFirestore();
+        localStorage.removeItem(Storage.GLOBAL_KEYS.FIREBASE_CONFIG);
+        document.getElementById('firebaseAuthSection').style.display = 'none';
+        document.getElementById('disconnectFirebase').style.display = 'none';
+        document.getElementById('authBadge').style.display = 'none';
+        this._updateSyncBadge('offline');
+    },
+
+    async fbSignIn() {
+        const email = document.getElementById('fbEmail').value.trim();
+        const password = document.getElementById('fbPassword').value;
+        if (!email || !password) { alert('Email and password required.'); return; }
+        try { await Storage._auth.signInWithEmailAndPassword(email, password); }
+        catch (e) { alert('Sign in failed: ' + e.message); }
+    },
+
+    async fbSignUp() {
+        const email = document.getElementById('fbEmail').value.trim();
+        const password = document.getElementById('fbPassword').value;
+        if (!email || !password) { alert('Email and password required.'); return; }
+        try { await Storage._auth.createUserWithEmailAndPassword(email, password); alert('Account created!'); }
+        catch (e) { alert('Sign up failed: ' + e.message); }
+    },
+
+    async fbGoogleSignIn() {
+        try {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            await Storage._auth.signInWithPopup(provider);
+        } catch (e) { alert('Google sign-in failed: ' + e.message); }
+    },
+
+    async fbSignOut() {
+        try {
+            await Storage._auth.signOut();
+            Storage._detachAllListeners();
+            this._updateSyncBadge('offline');
+            document.getElementById('authBadge').style.display = 'none';
+        } catch (e) { alert('Sign out failed: ' + e.message); }
+    },
+
+    _updateSyncBadge(status) {
+        const dot = document.querySelector('#syncBadge .sync-dot');
+        const label = document.getElementById('syncLabel');
+        if (!dot || !label) return;
+        dot.className = 'sync-dot ' + status;
+        const labels = { online: 'Synced', offline: 'Local', connecting: 'Connecting...', syncing: 'Syncing...' };
+        label.textContent = labels[status] || status;
+    },
+
+    _updateAuthBadge(user) {
+        const badge = document.getElementById('authBadge');
+        if (!badge) return;
+        if (user) {
+            badge.textContent = '👤 ' + (user.email || user.displayName || 'User');
+            badge.style.display = '';
+        } else {
+            badge.style.display = 'none';
+        }
+    },
+
+    _initFirebaseAuthListener() {
+        if (!Storage._auth) return;
+        Storage._auth.onAuthStateChanged(async (user) => {
+            this._updateAuthBadge(user);
+            const signOutBtn = document.getElementById('fbSignOut');
+            const signInBtn = document.getElementById('fbSignIn');
+            const signUpBtn = document.getElementById('fbSignUp');
+            const googleBtn = document.getElementById('fbGoogleSignIn');
+            const statusEl = document.getElementById('fbAuthStatus');
+            if (user) {
+                if (signOutBtn) signOutBtn.style.display = '';
+                if (signInBtn) signInBtn.style.display = 'none';
+                if (signUpBtn) signUpBtn.style.display = 'none';
+                if (googleBtn) googleBtn.style.display = 'none';
+                if (statusEl) statusEl.textContent = 'Signed in as ' + (user.email || user.displayName);
+                this._updateSyncBadge('syncing');
+                const pid = Storage.getActiveProjectId();
+                if (pid) {
+                    await Storage._initialSync(pid);
+                    Storage._syncProjectRegistry();
+                }
+                this._updateSyncBadge('online');
+                this.reloadApp();
+            } else {
+                if (signOutBtn) signOutBtn.style.display = 'none';
+                if (signInBtn) signInBtn.style.display = '';
+                if (signUpBtn) signUpBtn.style.display = '';
+                if (googleBtn) googleBtn.style.display = '';
+                if (statusEl) statusEl.textContent = 'Not signed in. Sign in to enable sync.';
+                this._updateSyncBadge('offline');
+            }
         });
     },
 

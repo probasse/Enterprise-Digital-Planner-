@@ -15,10 +15,20 @@ function escapeHtml(str) {
 const Storage = {
     // ── Global keys (not project-scoped) ──────────────────────────────────────
     GLOBAL_KEYS: {
-        THEME:          'cutover_theme',
-        PROJECTS:       'cutover_projects',
-        ACTIVE_PROJECT: 'cutover_active_project'
+        THEME:           'cutover_theme',
+        PROJECTS:        'cutover_projects',
+        ACTIVE_PROJECT:  'cutover_active_project',
+        FIREBASE_CONFIG: 'cutover_firebase_config'
     },
+
+    // ── Firebase / Firestore state ──────────────────────────────────────────────
+    _db: null,
+    _auth: null,
+    _firebaseApp: null,
+    _firestoreReady: false,
+    _suppressSync: false,
+    _unsubscribers: [],
+    _syncDebounceTimers: {},
 
     // ── Per-project keys — dynamically namespaced by active project ID ─────────
     get KEYS() {
@@ -83,6 +93,9 @@ const Storage = {
 
     setActiveProject(id) {
         localStorage.setItem(this.GLOBAL_KEYS.ACTIVE_PROJECT, id);
+        if (this._firestoreReady && this._auth?.currentUser) {
+            this._attachProjectListener(id);
+        }
     },
 
     /**
@@ -305,6 +318,9 @@ const Storage = {
     set(key, data) {
         try {
             localStorage.setItem(key, JSON.stringify(data));
+            if (this._firestoreReady && !this._suppressSync) {
+                this._syncKeyToFirestore(key, data);
+            }
             return true;
         } catch (e) {
             console.error('Error writing to localStorage:', e);
@@ -1026,6 +1042,169 @@ const Storage = {
             activity.pop();
         }
         this.set(this.KEYS.ACTIVITY, activity);
+    },
+
+    // ==================== FIRESTORE SYNC ====================
+
+    initFirestore(config) {
+        try {
+            if (this._firebaseApp) {
+                this._firebaseApp.delete().catch(() => {});
+            }
+            this._firebaseApp = firebase.initializeApp(config);
+            this._auth = firebase.auth();
+            this._db = firebase.firestore();
+            this._db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+                console.warn('Firestore persistence unavailable:', err.code);
+            });
+            this._firestoreReady = true;
+            return true;
+        } catch (e) {
+            console.error('Firebase init failed:', e);
+            this._firestoreReady = false;
+            return false;
+        }
+    },
+
+    _getProjectDocRef(projectId) {
+        if (!this._db || !projectId) return null;
+        return this._db.collection('projects').doc(projectId);
+    },
+
+    _keyToField(key) {
+        const pid = this.getActiveProjectId();
+        const prefix = pid ? `cutover_${pid}_` : 'cutover_default_';
+        if (key.startsWith(prefix)) return key.slice(prefix.length);
+        return null;
+    },
+
+    _syncKeyToFirestore(key, data) {
+        if (!this._firestoreReady || !this._auth?.currentUser) return;
+        const field = this._keyToField(key);
+        if (!field) return;
+        const pid = this.getActiveProjectId();
+        const docRef = this._getProjectDocRef(pid);
+        if (!docRef) return;
+        clearTimeout(this._syncDebounceTimers[key]);
+        this._syncDebounceTimers[key] = setTimeout(() => {
+            docRef.set({ [field]: data, _lastModified: new Date().toISOString() }, { merge: true })
+                .catch(err => console.error('Firestore sync error:', err));
+        }, 300);
+    },
+
+    _syncProjectRegistry() {
+        if (!this._firestoreReady || !this._auth?.currentUser) return;
+        const projects = this.getAllProjects();
+        this._db.collection('projectRegistry').doc('registry')
+            .set({ projects, _lastModified: new Date().toISOString() }, { merge: true })
+            .catch(err => console.error('Registry sync error:', err));
+    },
+
+    _detachAllListeners() {
+        this._unsubscribers.forEach(unsub => unsub());
+        this._unsubscribers = [];
+    },
+
+    _attachProjectListener(projectId) {
+        this._detachAllListeners();
+        const docRef = this._getProjectDocRef(projectId);
+        if (!docRef) return;
+
+        const _fieldMap = (pid) => {
+            const ns = `cutover_${pid}`;
+            return {
+                project: `${ns}_project`, tasks: `${ns}_tasks`, resources: `${ns}_resources`,
+                risks: `${ns}_risks`, rollback: `${ns}_rollback`, gonogo: `${ns}_gonogo`,
+                communications: `${ns}_communications`, categories: `${ns}_categories`,
+                statuses: `${ns}_statuses`, issues: `${ns}_issues`, decisions: `${ns}_decisions`,
+                actions: `${ns}_actions`, issue_categories: `${ns}_issue_categories`,
+                tags: `${ns}_tags`, task_seq: `${ns}_task_seq`, timezone: `${ns}_timezone`,
+                locked: `${ns}_locked`, activity: `${ns}_activity`, settings: `${ns}_settings`
+            };
+        };
+
+        const unsub = docRef.onSnapshot(snapshot => {
+            if (!snapshot.exists) return;
+            const data = snapshot.data();
+            if (!data) return;
+            this._suppressSync = true;
+            const fm = _fieldMap(projectId);
+            Object.entries(fm).forEach(([field, lsKey]) => {
+                if (data[field] !== undefined) {
+                    localStorage.setItem(lsKey, JSON.stringify(data[field]));
+                }
+            });
+            this._suppressSync = false;
+            if (typeof App !== 'undefined' && App.currentView) {
+                App.refreshView(App.currentView);
+                App.renderDashboard();
+            }
+        }, err => {
+            console.error('Snapshot listener error:', err);
+        });
+
+        this._unsubscribers.push(unsub);
+    },
+
+    async _initialSync(projectId) {
+        if (!this._firestoreReady || !this._auth?.currentUser) return;
+        const docRef = this._getProjectDocRef(projectId);
+        if (!docRef) return;
+        try {
+            const snapshot = await docRef.get();
+            if (snapshot.exists && snapshot.data()?.project) {
+                const data = snapshot.data();
+                this._suppressSync = true;
+                const ns = `cutover_${projectId}`;
+                const fm = {
+                    project: `${ns}_project`, tasks: `${ns}_tasks`, resources: `${ns}_resources`,
+                    risks: `${ns}_risks`, rollback: `${ns}_rollback`, gonogo: `${ns}_gonogo`,
+                    communications: `${ns}_communications`, categories: `${ns}_categories`,
+                    statuses: `${ns}_statuses`, issues: `${ns}_issues`, decisions: `${ns}_decisions`,
+                    actions: `${ns}_actions`, issue_categories: `${ns}_issue_categories`,
+                    tags: `${ns}_tags`, task_seq: `${ns}_task_seq`, timezone: `${ns}_timezone`,
+                    locked: `${ns}_locked`, activity: `${ns}_activity`, settings: `${ns}_settings`
+                };
+                Object.entries(fm).forEach(([field, lsKey]) => {
+                    if (data[field] !== undefined) {
+                        localStorage.setItem(lsKey, JSON.stringify(data[field]));
+                    }
+                });
+                this._suppressSync = false;
+            } else {
+                await this._pushAllToFirestore(projectId);
+            }
+            this._attachProjectListener(projectId);
+        } catch (err) {
+            console.error('Initial sync error:', err);
+        }
+    },
+
+    async _pushAllToFirestore(projectId) {
+        const docRef = this._getProjectDocRef(projectId);
+        if (!docRef) return;
+        const ns = `cutover_${projectId}`;
+        const data = {};
+        const fields = ['project','tasks','resources','risks','rollback','gonogo',
+            'communications','categories','statuses','issues','decisions','actions',
+            'issue_categories','tags','task_seq','timezone','locked','activity','settings'];
+        fields.forEach(f => {
+            const raw = localStorage.getItem(`${ns}_${f}`);
+            if (raw !== null) { try { data[f] = JSON.parse(raw); } catch(e) {} }
+        });
+        data._lastModified = new Date().toISOString();
+        await docRef.set(data, { merge: true });
+    },
+
+    disconnectFirestore() {
+        this._detachAllListeners();
+        if (this._firebaseApp) {
+            this._firebaseApp.delete().catch(() => {});
+            this._firebaseApp = null;
+        }
+        this._db = null;
+        this._auth = null;
+        this._firestoreReady = false;
     }
 };
 

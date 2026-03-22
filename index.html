@@ -95,6 +95,11 @@
                         <span class="countdown-timer" id="countdownTimer">--d --h --m</span>
                         <span class="timezone-badge" id="timezoneBadge" title="Active timezone"></span>
                     </div>
+                    <span class="sync-badge" id="syncBadge" title="Sync status">
+                        <span class="sync-dot offline"></span>
+                        <span class="sync-label" id="syncLabel">Local</span>
+                    </span>
+                    <span class="auth-badge" id="authBadge" style="display:none;" title="Signed in user"></span>
                     <span class="lock-badge" id="lockBadge" style="display:none;" title="Edit Lock is enabled — project is read-only">🔒 Locked</span>
                     <button class="btn-settings" id="projectSettings">⚙️</button>
                     <a class="btn-settings" href="docs/user-guide.html" target="_blank" title="User Guide">❓</a>
@@ -225,6 +230,10 @@
                         <div class="msf-wrap" id="taskPriorityFilter"></div>
                         <div class="msf-wrap" id="taskAssigneeFilter"></div>
                         <div class="msf-wrap" id="taskTagFilter"></div>
+                        <div class="view-toggle" id="taskViewToggle">
+                            <button class="view-toggle-btn active" data-task-view="list" title="List view">&#9776;</button>
+                            <button class="view-toggle-btn" data-task-view="kanban" title="Kanban view">&#9638;</button>
+                        </div>
                     </div>
                     <span class="tasks-total-duration" id="tasksTotalDuration" title="Click to see breakdown by category" onclick="App.showDurationBreakdown()"></span>
                     <button class="btn-primary" id="addTaskBtn">+ Add Task</button>
@@ -275,7 +284,7 @@
                     </div>
                     <button class="btn-secondary btn-sm" id="massClearSelection">✕ Clear</button>
                 </div>
-                <div class="tasks-container">
+                <div class="tasks-container" id="tasksTableContainer">
                     <table class="tasks-table">
                         <thead>
                             <tr>
@@ -299,6 +308,7 @@
                         </tbody>
                     </table>
                 </div>
+                <div id="kanbanView" class="kanban-board" style="display:none;"></div>
             </section>
 
             <!-- Timeline View -->
@@ -785,6 +795,10 @@
                             Mark as Milestone
                         </label>
                     </div>
+                    <div id="taskLinkedItems" style="display:none;">
+                        <div class="form-section-label">Linked Items</div>
+                        <div id="taskLinkedItemsList" class="linked-items-list"></div>
+                    </div>
                     <div class="form-group">
                         <label>Tags</label>
                         <div class="tag-checkboxes-container" id="taskTagCheckboxes"></div>
@@ -912,6 +926,10 @@
                             <option value="mitigated">Mitigated</option>
                             <option value="closed">Closed</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="riskLinkedTask">Linked Task</label>
+                        <select id="riskLinkedTask"></select>
                     </div>
                     <div class="form-group">
                         <label>Tags</label>
@@ -1130,6 +1148,10 @@
                         <textarea id="issueResolution" rows="2" placeholder="How was the issue resolved?"></textarea>
                     </div>
                     <div class="form-group">
+                        <label for="issueLinkedTask">Linked Task</label>
+                        <select id="issueLinkedTask"></select>
+                    </div>
+                    <div class="form-group">
                         <label>Tags</label>
                         <div class="tag-checkboxes-container" id="issueTagCheckboxes"></div>
                     </div>
@@ -1193,6 +1215,10 @@
                     <div class="form-group">
                         <label for="decisionImpact">Impact</label>
                         <textarea id="decisionImpact" rows="2" placeholder="What is the impact of this decision?"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="decisionLinkedTask">Linked Task</label>
+                        <select id="decisionLinkedTask"></select>
                     </div>
                     <div class="form-group">
                         <label>Tags</label>
@@ -1268,6 +1294,10 @@
                     <div class="form-group">
                         <label for="actionNotes">Notes</label>
                         <textarea id="actionNotes" rows="2" placeholder="Additional notes"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="actionLinkedTask">Linked Task</label>
+                        <select id="actionLinkedTask"></select>
                     </div>
                     <div class="form-group">
                         <label>Tags</label>
@@ -1376,6 +1406,45 @@
                             <button type="button" class="btn-secondary" id="addTagBtn">+ Add</button>
                         </div>
                     </div>
+
+                    <div class="form-section">
+                        <h3>☁️ Firebase Connection</h3>
+                        <p class="help-text">Connect to Firebase for real-time multi-user sync. Credentials are stored in your browser only — never in source code.</p>
+                        <div id="firebaseConfigSection">
+                            <div class="form-row">
+                                <div class="form-group"><label for="fbApiKey">API Key</label><input type="text" id="fbApiKey" placeholder="AIza..."></div>
+                                <div class="form-group"><label for="fbProjectId">Project ID</label><input type="text" id="fbProjectId" placeholder="my-project-id"></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group"><label for="fbAuthDomain">Auth Domain</label><input type="text" id="fbAuthDomain" placeholder="my-project.firebaseapp.com"></div>
+                                <div class="form-group"><label for="fbStorageBucket">Storage Bucket</label><input type="text" id="fbStorageBucket" placeholder="my-project.appspot.com"></div>
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group"><label for="fbMessagingSenderId">Messaging Sender ID</label><input type="text" id="fbMessagingSenderId" placeholder="123456789"></div>
+                                <div class="form-group"><label for="fbAppId">App ID</label><input type="text" id="fbAppId" placeholder="1:123:web:abc"></div>
+                            </div>
+                            <div class="settings-data-actions">
+                                <button type="button" class="btn-primary" id="saveFirebaseConfig">💾 Save &amp; Connect</button>
+                                <button type="button" class="btn-secondary" id="testFirebaseConnection">🔗 Test</button>
+                                <button type="button" class="btn-danger" id="disconnectFirebase" style="display:none;">⛔ Disconnect</button>
+                            </div>
+                        </div>
+                        <div id="firebaseAuthSection" style="display:none;">
+                            <div class="form-section-label">Authentication</div>
+                            <div class="form-row">
+                                <div class="form-group"><label for="fbEmail">Email</label><input type="email" id="fbEmail" placeholder="you@example.com"></div>
+                                <div class="form-group"><label for="fbPassword">Password</label><input type="password" id="fbPassword" placeholder="Password"></div>
+                            </div>
+                            <div class="settings-data-actions">
+                                <button type="button" class="btn-primary" id="fbSignIn">🔑 Sign In</button>
+                                <button type="button" class="btn-secondary" id="fbSignUp">📝 Sign Up</button>
+                                <button type="button" class="btn-secondary" id="fbGoogleSignIn">🔵 Google</button>
+                                <button type="button" class="btn-danger" id="fbSignOut" style="display:none;">🚪 Sign Out</button>
+                            </div>
+                            <p class="help-text" id="fbAuthStatus"></p>
+                        </div>
+                    </div>
+
                     <div class="form-section">
                         <h3>💾 Data</h3>
                         <p class="help-text">Export or import all project data as JSON. To export/import individual data types as CSV, use the buttons in each view.</p>
@@ -1466,6 +1535,15 @@
     </div>
 
     <!-- Scripts -->
+        <div id="syncOverlay" class="sync-overlay" style="display:none;">
+            <div class="sync-overlay-content">
+                <div class="sync-spinner"></div>
+                <p>Syncing with Firestore...</p>
+            </div>
+        </div>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
     <script src="js/storage.js"></script>
     <script src="js/tasks.js"></script>
     <script src="js/timeline.js"></script>
