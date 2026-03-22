@@ -1083,3 +1083,62 @@ const IssueCategories = {
         Storage.addActivity('Issue category deleted');
     }
 };
+
+/**
+ * Tags Module - Handles project-scoped tags for Tasks, Issues, Decisions, Actions, Risks
+ */
+const Tags = {
+    getAll() {
+        return Storage.get(Storage.KEYS.TAGS) || [];
+    },
+
+    getById(id) {
+        return this.getAll().find(t => t.id === id);
+    },
+
+    getByValue(value) {
+        return this.getAll().find(t => t.value === value);
+    },
+
+    getName(value) {
+        const t = this.getByValue(value);
+        return t ? t.name : value;
+    },
+
+    getColor(value) {
+        const t = this.getByValue(value);
+        return t ? t.color : '#6b7280';
+    },
+
+    add(name, color) {
+        const tags = this.getAll();
+        let value = name.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+        const existing = tags.map(t => t.value);
+        let deduped = value, n = 2;
+        while (existing.includes(deduped)) { deduped = `${value}-${n++}`; }
+        value = deduped;
+        const newTag = { id: Storage.generateId(), name: name.trim(), color, value };
+        tags.push(newTag);
+        Storage.set(Storage.KEYS.TAGS, tags);
+        Storage.addActivity('Tag added', name);
+        return newTag;
+    },
+
+    update(id, name, color) {
+        const tags = this.getAll();
+        const index = tags.findIndex(t => t.id === id);
+        if (index !== -1) {
+            tags[index].name = name.trim();
+            tags[index].color = color;
+            Storage.set(Storage.KEYS.TAGS, tags);
+            Storage.addActivity('Tag updated', name);
+        }
+    },
+
+    delete(id) {
+        let tags = this.getAll();
+        tags = tags.filter(t => t.id !== id);
+        Storage.set(Storage.KEYS.TAGS, tags);
+        Storage.addActivity('Tag deleted');
+    }
+};

@@ -320,6 +320,17 @@ const App = {
         if (totalRisksEl) totalRisksEl.textContent = riskStats.open;
         if (goNoGoStatusEl) goNoGoStatusEl.textContent = GoNoGo.calculateDecision().toUpperCase();
 
+        // Remaining effort — sum durationSeconds of all non-completed tasks
+        const remainingEffortEl = document.getElementById('remainingEffort');
+        if (remainingEffortEl) {
+            const allTasks = Tasks.getAll();
+            this._remainingEffortSecs = allTasks
+                .filter(t => t.status !== 'completed')
+                .reduce((sum, t) => sum + (t.durationSeconds || 0), 0);
+            if (!this._effortUnit) this._effortUnit = 'hours';
+            this._renderRemainingEffort();
+        }
+
         // Progress bar
         const progressBar = document.getElementById('overallProgress');
         const progressText = document.getElementById('progressText');
@@ -358,6 +369,39 @@ const App = {
         const upcomingList = document.getElementById('upcomingTasks');
         if (upcomingList) upcomingList.innerHTML = upcomingHtml || '<li class="no-items">No upcoming critical tasks</li>';
 
+        // Recent activity
+        const activities = Storage.get(Storage.KEYS.ACTIVITY) || [];
+        const activityHtml = activities.slice(0, 15).map(a => `
+            <li class="activity-item">
+                <span class="activity-action">${escapeHtml(a.action)}</span>
+                ${a.details ? `<span class="activity-details">${escapeHtml(a.details)}</span>` : ''}
+                <span class="activity-time">${this.formatDateTime24(a.timestamp)}</span>
+            </li>
+        `).join('');
+        const activityList = document.getElementById('recentActivity');
+        if (activityList) activityList.innerHTML = activityHtml || '<li class="no-items">No recent activity</li>';
+
+        // IDA summaries
+        this._renderIdaSummary('issueSummary', Issues.getStats(), [
+            { key: 'open', label: 'Open', cls: 'warning' },
+            { key: 'inProgress', label: 'In Progress', cls: 'info' },
+            { key: 'blocked', label: 'Blocked', cls: 'danger' },
+            { key: 'resolved', label: 'Resolved', cls: 'info' },
+            { key: 'closed', label: 'Closed', cls: 'success' }
+        ]);
+        this._renderIdaSummary('decisionSummary', Decisions.getStats(), [
+            { key: 'pending', label: 'Pending', cls: 'warning' },
+            { key: 'approved', label: 'Approved', cls: 'success' },
+            { key: 'rejected', label: 'Rejected', cls: 'danger' },
+            { key: 'deferred', label: 'Deferred', cls: 'muted' }
+        ]);
+        this._renderIdaSummary('actionSummary', Actions.getStats(), [
+            { key: 'open', label: 'Open', cls: 'warning' },
+            { key: 'inProgress', label: 'In Progress', cls: 'info' },
+            { key: 'completed', label: 'Completed', cls: 'success' },
+            { key: 'overdue', label: 'Overdue', cls: 'danger' }
+        ]);
+
         this.updateCountdown();
     },
 
@@ -385,6 +429,61 @@ const App = {
         }
     },
 
+    _renderRemainingEffort() {
+        const el = document.getElementById('remainingEffort');
+        const hintEl = document.getElementById('effortUnitHint');
+        if (!el) return;
+        const secs = this._remainingEffortSecs || 0;
+        const unit = this._effortUnit || 'hours';
+        if (secs <= 0) {
+            const allTasks = Tasks.getAll();
+            el.textContent = allTasks.length > 0 ? 'Done' : '--';
+            if (hintEl) hintEl.textContent = '';
+            return;
+        }
+        let value, label;
+        if (unit === 'minutes') {
+            value = Math.round(secs / 60);
+            label = value === 1 ? 'min' : 'mins';
+        } else if (unit === 'hours') {
+            const h = Math.floor(secs / 3600);
+            const m = Math.round((secs % 3600) / 60);
+            value = h > 0 ? `${h}h ${m}m` : `${m}m`;
+            label = null;
+        } else {
+            const d = (secs / 86400);
+            value = d >= 10 ? Math.round(d) : d.toFixed(1);
+            label = d === 1 ? 'day' : 'days';
+        }
+        el.textContent = label ? `${value} ${label}` : value;
+        if (hintEl) hintEl.textContent = `(${unit})`;
+    },
+
+    cycleEffortUnit() {
+        const units = ['minutes', 'hours', 'days'];
+        const idx = units.indexOf(this._effortUnit || 'hours');
+        this._effortUnit = units[(idx + 1) % units.length];
+        this._renderRemainingEffort();
+    },
+
+    _renderIdaSummary(elId, stats, fields) {
+        const el = document.getElementById(elId);
+        if (!el) return;
+        if (stats.total === 0) {
+            el.innerHTML = '<span class="no-items">None</span>';
+            return;
+        }
+        const totalHtml = `<div class="ida-total">${stats.total} Total</div>`;
+        const barsHtml = fields
+            .filter(f => stats[f.key] > 0)
+            .map(f => `<div class="ida-stat-row">
+                <span class="ida-stat-label">${escapeHtml(f.label)}</span>
+                <span class="ida-stat-bar-wrap"><span class="ida-stat-bar ${escapeHtml(f.cls)}" style="width:${Math.round(stats[f.key] / stats.total * 100)}%"></span></span>
+                <span class="ida-stat-count">${stats[f.key]}</span>
+            </div>`).join('');
+        el.innerHTML = totalHtml + barsHtml;
+    },
+
     bindDashboardActions() {
         // Dashboard actions bound in bindGlobalActions
     },
@@ -403,6 +502,8 @@ const App = {
         this.bindCategoryActions();
         this.renderIssueCategoriesList();
         this.bindIssueCategoryActions();
+        this.renderTagsList();
+        this.bindTagActions();
         this.openModal('settingsModal');
     },
 
@@ -514,6 +615,7 @@ const App = {
         this.populateCategoryFilterDropdown();
         this.populateAssigneeFilterDropdown();
         this.populateStatusFilterDropdown();
+        this.populateTagFilterDropdown('taskTagFilter');
 
         const filters = {
             category: this._msfGetValues('taskCategoryFilter'),
@@ -522,6 +624,8 @@ const App = {
             assignee: this._msfGetValues('taskAssigneeFilter')
         };
         let tasks = Tasks.sortByDate(Tasks.getFiltered(filters));
+        const tagFilter = this._msfGetValues('taskTagFilter');
+        if (tagFilter.length) tasks = tasks.filter(t => (t.tags || []).some(v => tagFilter.includes(v)));
         const allTasks = Tasks.getAll();
         // Sort keys for computed columns (duration in seconds, dep count for stable sort)
         const taskSortKeys = {
@@ -539,9 +643,12 @@ const App = {
             const cat = Categories.getByValue(task.category);
             const catLabel = cat ? escapeHtml(cat.name) : escapeHtml(task.category);
             const catColor = cat ? escapeHtml(cat.color) : '#6b7280';
-            const statusOptions = Statuses.getAll().map(s =>
-                `<option value="${escapeHtml(s.value)}" ${task.status === s.value ? 'selected' : ''}>${escapeHtml(s.name)}</option>`
-            ).join('');
+            const currentStatus = Statuses.getByValue(task.status);
+            const statusLabel = currentStatus ? escapeHtml(currentStatus.name) : escapeHtml(task.status);
+            const statusColor = currentStatus ? escapeHtml(currentStatus.color) : '#6b7280';
+            // Use inline style for custom statuses; built-in ones are covered by CSS classes
+            const builtInStatuses = ['not-started','in-progress','completed','blocked'];
+            const statusStyle = builtInStatuses.includes(task.status) ? '' : `style="background-color:${statusColor}22; color:${statusColor};"`;
             const depLabels = (task.dependencies || []).map(depId => {
                 const dep = allTasks.find(t => t.id === depId);
                 return dep ? escapeHtml(dep.taskNumber || dep.id) : escapeHtml(depId);
@@ -549,15 +656,13 @@ const App = {
             const durationStr = task.durationSeconds ? escapeHtml(this.secondsToHms(task.durationSeconds)) : '-';
             const isSelected = (this._massSelected || new Set()).has(task.id);
             return `
-            <tr class="clickable-row${isSelected ? ' mass-selected' : ''}" onclick="if(!event.target.closest('button,select,.col-checkbox'))App.editTask('${escapeHtml(task.id)}')">
+            <tr class="clickable-row${isSelected ? ' mass-selected' : ''}" onclick="if(!event.target.closest('button,.status-cycle-btn,.col-checkbox'))App.editTask('${escapeHtml(task.id)}')">
                 <td class="col-checkbox"><input type="checkbox" class="task-row-checkbox" data-id="${escapeHtml(task.id)}" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation();App.toggleTaskSelection('${escapeHtml(task.id)}',this.checked)"></td>
                 <td data-col="0"><span class="task-number-badge">${escapeHtml(task.taskNumber || '-')}</span></td>
                 <td data-col="1">
-                    <select class="status-select" onchange="App.quickUpdateTaskStatus('${escapeHtml(task.id)}', this.value)">
-                        ${statusOptions}
-                    </select>
+                    <span class="status-badge status-cycle-btn ${escapeHtml(task.status)}" ${statusStyle} onclick="event.stopPropagation();App.cycleTaskStatus('${escapeHtml(task.id)}')" oncontextmenu="event.preventDefault();event.stopPropagation();App.resetTaskStatus('${escapeHtml(task.id)}')" title="Click to cycle status · Right-click to reset">${statusLabel}</span>
                 </td>
-                <td data-col="2">${task.milestone ? '🔹 ' : ''}${escapeHtml(task.name)}</td>
+                <td data-col="2">${task.milestone ? '🔹 ' : ''}${escapeHtml(task.name)}${task.tags && task.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(task.tags) + '</div>' : ''}</td>
                 <td data-col="3"><span class="category-badge" style="background-color:${catColor}; color:#fff;">${catLabel}</span></td>
                 <td data-col="4"><span class="priority-badge ${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span></td>
                 <td data-col="5">${escapeHtml(Resources.getName(task.assignee))}</td>
@@ -685,7 +790,9 @@ const App = {
             priority: this._msfGetValues('taskPriorityFilter'),
             assignee: this._msfGetValues('taskAssigneeFilter')
         };
-        const tasks = Tasks.getFiltered(filters);
+        let tasks = Tasks.getFiltered(filters);
+        const tagFilter = this._msfGetValues('taskTagFilter');
+        if (tagFilter.length) tasks = tasks.filter(t => (t.tags || []).some(v => tagFilter.includes(v)));
 
         // Group by category — merge overlapping intervals per category to avoid double-counting parallel tasks
         const wallClockSecs = (taskList) => {
@@ -761,6 +868,7 @@ const App = {
         this._msfBuild('taskStatusFilter',   'Statuses',   [], rerender);
         this._msfBuild('taskPriorityFilter', 'Priorities', priorityOpts, rerender);
         this._msfBuild('taskAssigneeFilter', 'Assignees',  [], rerender);
+        this._msfBuild('taskTagFilter',      'Tags',       [], rerender);
         this.bindColumnVisibility();
 
         // Word-wrap toggle for Task Name column
@@ -1316,6 +1424,7 @@ const App = {
         this.populateStatusDropdown('taskStatus', task?.status || 'not-started');
         this.populateAssigneeDropdown('taskAssignee', task?.assignee);
         this.populateTaskDependencyDropdown(task?.id, task?.dependencies || []);
+        this.populateTagCheckboxes('taskTagCheckboxes', task?.tags || []);
 
         const actualDatesRow = document.getElementById('taskActualDatesRow');
         if (task && (task.actualStart || task.actualEnd)) {
@@ -1500,7 +1609,8 @@ const App = {
             assignee:        document.getElementById('taskAssignee').value,
             dependencies:    deps,
             description:     document.getElementById('taskDescription').value,
-            milestone:       document.getElementById('taskMilestone').checked
+            milestone:       document.getElementById('taskMilestone').checked,
+            tags:            this.getSelectedTags('taskTagCheckboxes')
         };
 
         if (id) {
@@ -1533,15 +1643,32 @@ const App = {
         const promoted = status === 'completed' ? this._autoProgressSuccessors(id) : [];
         this.renderDashboard();
         if (promoted.length > 0) {
-            // Successors were promoted — full re-render so their status dropdowns update
+            // Successors were promoted — full re-render so their status badges update
             this.renderTaskList();
         } else {
+            // Live-update the status badge in the task list row
+            if (task) this._refreshTaskRowStatusBadge(id, task);
             // Live-update the actual dates row in the task list without full re-render
             if (task) this._refreshTaskRowActualDates(id, task);
             // Live-update if this task's modal is currently open
             const openId = document.getElementById('taskId')?.value;
             if (openId === id && task) this._refreshTaskModalActualDates(task);
         }
+    },
+
+    cycleTaskStatus(id) {
+        const task = Tasks.getById(id);
+        if (!task) return;
+        const statuses = Statuses.getAll();
+        const idx = statuses.findIndex(s => s.value === task.status);
+        const next = statuses[(idx + 1) % statuses.length];
+        this.quickUpdateTaskStatus(id, next.value);
+    },
+
+    resetTaskStatus(id) {
+        const statuses = Statuses.getAll();
+        if (!statuses.length) return;
+        this.quickUpdateTaskStatus(id, statuses[0].value);
     },
 
     /**
@@ -1573,6 +1700,30 @@ const App = {
         });
 
         return promoted;
+    },
+
+    _refreshTaskRowStatusBadge(id, task) {
+        const rows = document.querySelectorAll('#tasksTableBody tr');
+        rows.forEach(row => {
+            const onclick = row.getAttribute('onclick') || '';
+            if (!onclick.includes(id)) return;
+            const badge = row.querySelector('.status-cycle-btn');
+            if (!badge) return;
+            const statusObj = Statuses.getByValue(task.status);
+            const label = statusObj ? statusObj.name : task.status;
+            const color = statusObj ? statusObj.color : '#6b7280';
+            badge.textContent = label;
+            // Reset class to status-badge + status-cycle-btn + new status value
+            badge.className = 'status-badge status-cycle-btn ' + task.status;
+            // Inline style for custom statuses
+            const builtIn = ['not-started','in-progress','completed','blocked'];
+            if (builtIn.includes(task.status)) {
+                badge.removeAttribute('style');
+            } else {
+                badge.style.backgroundColor = color + '22';
+                badge.style.color = color;
+            }
+        });
     },
 
     _refreshTaskRowActualDates(id, task) {
@@ -1689,11 +1840,14 @@ const App = {
 
     // ==================== RISKS ====================
     renderRiskList() {
+        this.populateTagFilterDropdown('riskTagFilter');
         const filters = {
             severity: this._msfGetValues('riskSeverityFilter'),
             status:   this._msfGetValues('riskStatusFilter')
         };
         let risks = Risks.getFiltered(filters);
+        const tagVals = this._msfGetValues('riskTagFilter');
+        if (tagVals.length) risks = risks.filter(r => (r.tags || []).some(v => tagVals.includes(v)));
         // Pre-compute sort keys for computed/display-only columns
         const riskDurations = risks.map(r => { const d = Risks.getStatusDurations(r); return d[d.length-1]; });
         const riskSortKeys = {
@@ -1711,7 +1865,7 @@ const App = {
             return `
             <tr class="clickable-row" onclick="if(!event.target.closest('button'))App.editRisk('${escapeHtml(r.id)}')">
                 <td data-col="0">R-${String(index + 1).padStart(3, '0')}</td>
-                <td data-col="1">${escapeHtml(r.description)}</td>
+                <td data-col="1">${escapeHtml(r.description)}${r.tags && r.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(r.tags) + '</div>' : ''}</td>
                 <td data-col="2"><span class="severity-badge ${escapeHtml(r.severity)}">${escapeHtml(r.severity)}</span></td>
                 <td data-col="3">${escapeHtml(r.probability)}</td>
                 <td data-col="4">${escapeHtml(r.impact) || '-'}</td>
@@ -1941,6 +2095,7 @@ const App = {
         this._msfBuild('riskStatusFilter', 'Status', [
             {value:'open',label:'Open'},{value:'mitigated',label:'Mitigated'},{value:'closed',label:'Closed'}
         ], rerender);
+        this._msfBuild('riskTagFilter', 'Tags', [], rerender);
     },
 
     showRiskModal(risk = null) {
@@ -1953,6 +2108,7 @@ const App = {
         document.getElementById('riskMitigation').value = risk?.mitigation || '';
         document.getElementById('riskStatus').value = risk?.status || 'open';
         this.populateAssigneeDropdown('riskOwner', risk?.owner);
+        this.populateTagCheckboxes('riskTagCheckboxes', risk?.tags || []);
 
         const historyEl = document.getElementById('riskStatusHistory');
         const historyContent = document.getElementById('riskStatusHistoryContent');
@@ -1984,7 +2140,8 @@ const App = {
             impact: document.getElementById('riskImpact').value,
             mitigation: document.getElementById('riskMitigation').value,
             owner: document.getElementById('riskOwner').value,
-            status: document.getElementById('riskStatus').value
+            status: document.getElementById('riskStatus').value,
+            tags: this.getSelectedTags('riskTagCheckboxes')
         };
 
         if (id) {
@@ -2266,13 +2423,16 @@ const App = {
     // ==================== ISSUES ====================
     renderIssueList() {
         this.populateIssueCategoryFilterDropdown();
+        this.populateTagFilterDropdown('issueTagFilter');
         const statusVals   = this._msfGetValues('issueStatusFilter');
         const priorityVals = this._msfGetValues('issuePriorityFilter');
         const categoryVals = this._msfGetValues('issueCategoryFilter');
+        const tagVals      = this._msfGetValues('issueTagFilter');
         let items = Issues.getAll();
         if (statusVals.length)   items = items.filter(i => statusVals.includes(i.status));
         if (priorityVals.length) items = items.filter(i => priorityVals.includes(i.priority));
         if (categoryVals.length) items = items.filter(i => categoryVals.includes(i.category));
+        if (tagVals.length)      items = items.filter(i => (i.tags || []).some(v => tagVals.includes(v)));
 
         const issueDurations = items.map(item => { const d = Issues.getStatusDurations(item); return d[d.length-1]; });
         const issueSortKeys = {
@@ -2292,7 +2452,7 @@ const App = {
             return `
             <tr class="clickable-row${isBlocked ? ' overdue-row' : ''}" onclick="if(!event.target.closest('button'))App.editIssue('${escapeHtml(item.id)}')">
                 <td data-col="0">I-${String(idx + 1).padStart(3, '0')}</td>
-                <td data-col="1">${escapeHtml(item.title)}</td>
+                <td data-col="1">${escapeHtml(item.title)}${item.tags && item.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(item.tags) + '</div>' : ''}</td>
                 <td data-col="2"><span class="category-badge" style="background-color:${escapeHtml(catColor)}20;color:${escapeHtml(catColor)};border-color:${escapeHtml(catColor)}40;">${escapeHtml(catName)}</span></td>
                 <td data-col="3"><span class="priority-badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority)}</span></td>
                 <td data-col="4"><span class="status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></td>
@@ -2326,6 +2486,7 @@ const App = {
             {value:'medium',label:'Medium'},{value:'low',label:'Low'}
         ], rerender);
         this._msfBuild('issueCategoryFilter', 'Category', [], rerender);
+        this._msfBuild('issueTagFilter', 'Tags', [], rerender);
     },
 
     showIssueModal(issue = null) {
@@ -2339,6 +2500,7 @@ const App = {
         document.getElementById('issueDueDate').value = issue?.dueDate ? this.toLocalInput(issue.dueDate) : '';
         document.getElementById('issueResolution').value = issue?.resolution || '';
         this.populateAssigneeDropdown('issueOwner', issue?.owner);
+        this.populateTagCheckboxes('issueTagCheckboxes', issue?.tags || []);
 
         const historyEl = document.getElementById('issueStatusHistory');
         const historyContent = document.getElementById('issueStatusHistoryContent');
@@ -2372,7 +2534,8 @@ const App = {
             status: document.getElementById('issueStatus').value,
             owner: document.getElementById('issueOwner').value,
             dueDate: dueDateLocal ? this.fromLocalInput(dueDateLocal) : '',
-            resolution: document.getElementById('issueResolution').value
+            resolution: document.getElementById('issueResolution').value,
+            tags: this.getSelectedTags('issueTagCheckboxes')
         };
         if (id) {
             Issues.update(id, data);
@@ -2398,9 +2561,12 @@ const App = {
 
     // ==================== DECISIONS ====================
     renderDecisionList() {
+        this.populateTagFilterDropdown('decisionTagFilter');
         const statusVals = this._msfGetValues('decisionStatusFilter');
+        const tagVals    = this._msfGetValues('decisionTagFilter');
         let items = Decisions.getAll();
         if (statusVals.length) items = items.filter(d => statusVals.includes(d.status));
+        if (tagVals.length)    items = items.filter(d => (d.tags || []).some(v => tagVals.includes(v)));
 
         const decDurations = items.map(item => { const d = Decisions.getStatusDurations(item); return d[d.length-1]; });
         const decSortKeys = {
@@ -2417,7 +2583,7 @@ const App = {
             return `
             <tr class="clickable-row" onclick="if(!event.target.closest('button'))App.editDecision('${escapeHtml(item.id)}')">
                 <td data-col="0">D-${String(idx + 1).padStart(3, '0')}</td>
-                <td data-col="1">${escapeHtml(item.title)}</td>
+                <td data-col="1">${escapeHtml(item.title)}${item.tags && item.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(item.tags) + '</div>' : ''}</td>
                 <td data-col="2"><span class="status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></td>
                 <td data-col="3">${escapeHtml(Resources.getName(item.decidedBy))}</td>
                 <td data-col="4">${escapeHtml(item.impact || '-')}</td>
@@ -2444,6 +2610,7 @@ const App = {
             {value:'pending',label:'Pending'},{value:'approved',label:'Approved'},
             {value:'rejected',label:'Rejected'},{value:'deferred',label:'Deferred'}
         ], () => this.renderDecisionList());
+        this._msfBuild('decisionTagFilter', 'Tags', [], () => this.renderDecisionList());
     },
 
     showDecisionModal(decision = null) {
@@ -2456,6 +2623,7 @@ const App = {
         document.getElementById('decisionStatus').value = decision?.status || 'pending';
         document.getElementById('decisionImpact').value = decision?.impact || '';
         this.populateAssigneeDropdown('decisionDecidedBy', decision?.decidedBy);
+        this.populateTagCheckboxes('decisionTagCheckboxes', decision?.tags || []);
 
         const historyEl = document.getElementById('decisionStatusHistory');
         const historyContent = document.getElementById('decisionStatusHistoryContent');
@@ -2487,7 +2655,8 @@ const App = {
             optionsConsidered: document.getElementById('decisionOptions').value,
             status: document.getElementById('decisionStatus').value,
             decidedBy: document.getElementById('decisionDecidedBy').value,
-            impact: document.getElementById('decisionImpact').value
+            impact: document.getElementById('decisionImpact').value,
+            tags: this.getSelectedTags('decisionTagCheckboxes')
         };
         if (id) {
             Decisions.update(id, data);
@@ -2513,11 +2682,14 @@ const App = {
 
     // ==================== ACTIONS ====================
     renderActionList() {
+        this.populateTagFilterDropdown('actionTagFilter');
         const statusVals   = this._msfGetValues('actionStatusFilter');
         const priorityVals = this._msfGetValues('actionPriorityFilter');
+        const tagVals      = this._msfGetValues('actionTagFilter');
         let items = Actions.getAll();
         if (statusVals.length)   items = items.filter(a => statusVals.includes(a.status));
         if (priorityVals.length) items = items.filter(a => priorityVals.includes(a.priority));
+        if (tagVals.length)      items = items.filter(a => (a.tags || []).some(v => tagVals.includes(v)));
 
         const now = new Date();
         const actDurations = items.map(item => { const d = Actions.getStatusDurations(item); return d[d.length-1]; });
@@ -2536,7 +2708,7 @@ const App = {
             return `
             <tr class="clickable-row${isOverdue ? ' overdue-row' : ''}" onclick="if(!event.target.closest('button'))App.editAction('${escapeHtml(item.id)}')">
                 <td data-col="0">A-${String(idx + 1).padStart(3, '0')}</td>
-                <td data-col="1">${escapeHtml(item.title)}</td>
+                <td data-col="1">${escapeHtml(item.title)}${item.tags && item.tags.length ? '<div class="cell-tags">' + this.renderTagBadges(item.tags) + '</div>' : ''}</td>
                 <td data-col="2"><span class="priority-badge ${escapeHtml(item.priority)}">${escapeHtml(item.priority)}</span></td>
                 <td data-col="3"><span class="status-badge ${escapeHtml(item.status)}">${escapeHtml(item.status)}</span></td>
                 <td data-col="4">${escapeHtml(Resources.getName(item.owner))}</td>
@@ -2568,6 +2740,7 @@ const App = {
             {value:'critical',label:'Critical'},{value:'high',label:'High'},
             {value:'medium',label:'Medium'},{value:'low',label:'Low'}
         ], rerender);
+        this._msfBuild('actionTagFilter', 'Tags', [], rerender);
     },
 
     showActionModal(action = null) {
@@ -2581,6 +2754,7 @@ const App = {
         document.getElementById('actionLinkedItem').value = action?.linkedItem || '';
         document.getElementById('actionNotes').value = action?.notes || '';
         this.populateAssigneeDropdown('actionOwner', action?.owner);
+        this.populateTagCheckboxes('actionTagCheckboxes', action?.tags || []);
 
         const historyEl = document.getElementById('actionStatusHistory');
         const historyContent = document.getElementById('actionStatusHistoryContent');
@@ -2614,7 +2788,8 @@ const App = {
             owner: document.getElementById('actionOwner').value,
             dueDate: dueDateLocal ? this.fromLocalInput(dueDateLocal) : '',
             linkedItem: document.getElementById('actionLinkedItem').value,
-            notes: document.getElementById('actionNotes').value
+            notes: document.getElementById('actionNotes').value,
+            tags: this.getSelectedTags('actionTagCheckboxes')
         };
         if (id) {
             Actions.update(id, data);
@@ -2754,7 +2929,7 @@ const App = {
         const configs = {
             tasks: {
                 filename: `${projName}-tasks-${date}.csv`,
-                headers: ['Task ID','Task Name','Category','Priority','Status','Assignee','Planned Start','Planned End','Duration (HH:MM:SS)','Actual Start','Actual End','Actual Duration (HH:MM:SS)','Milestone','Description','Dependencies'],
+                headers: ['Task ID','Task Name','Category','Priority','Status','Assignee','Planned Start','Planned End','Duration (HH:MM:SS)','Actual Start','Actual End','Actual Duration (HH:MM:SS)','Milestone','Description','Dependencies','Tags'],
                 rows: () => Tasks.sortByDate(allTasks).map(t => {
                     const actualDurSecs = t.actualStart && t.actualEnd
                         ? Math.round((new Date(t.actualEnd) - new Date(t.actualStart)) / 1000) : null;
@@ -2777,7 +2952,8 @@ const App = {
                         actualDurSecs  ? this._csvFmtDuration(actualDurSecs) : '',
                         t.milestone ? 'Yes' : 'No',
                         t.description || '',
-                        deps
+                        deps,
+                        (t.tags || []).map(v => Tags.getName(v)).join('; ')
                     ];
                 })
             },
@@ -2800,7 +2976,7 @@ const App = {
             },
             risks: {
                 filename: `${projName}-risks-${date}.csv`,
-                headers: ['ID','Description','Severity','Probability','Impact','Mitigation','Owner','Status','Created'],
+                headers: ['ID','Description','Severity','Probability','Impact','Mitigation','Owner','Status','Created','Tags'],
                 rows: () => Risks.getAll().map((r, i) => [
                     `R-${String(i + 1).padStart(3, '0')}`,
                     r.description || '',
@@ -2810,12 +2986,13 @@ const App = {
                     r.mitigation || '',
                     Resources.getName(r.owner) || '',
                     r.status || '',
-                    this.formatDateTime24(r.createdAt)
+                    this.formatDateTime24(r.createdAt),
+                    (r.tags || []).map(v => Tags.getName(v)).join('; ')
                 ])
             },
             issues: {
                 filename: `${projName}-issues-${date}.csv`,
-                headers: ['ID','Title','Category','Priority','Status','Owner','Raised Date','Due Date','Resolution','Description'],
+                headers: ['ID','Title','Category','Priority','Status','Owner','Raised Date','Due Date','Resolution','Description','Tags'],
                 rows: () => Issues.getAll().map((item, i) => [
                     `I-${String(i + 1).padStart(3, '0')}`,
                     item.title || '',
@@ -2826,12 +3003,13 @@ const App = {
                     this.formatDateTime24(item.raisedDate),
                     item.dueDate ? this.formatDateTime24(item.dueDate) : '',
                     item.resolution || '',
-                    item.description || ''
+                    item.description || '',
+                    (item.tags || []).map(v => Tags.getName(v)).join('; ')
                 ])
             },
             decisions: {
                 filename: `${projName}-decisions-${date}.csv`,
-                headers: ['ID','Title','Status','Decided By','Impact','Options Considered','Decision Made','Raised Date','Description'],
+                headers: ['ID','Title','Status','Decided By','Impact','Options Considered','Decision Made','Raised Date','Description','Tags'],
                 rows: () => Decisions.getAll().map((item, i) => [
                     `D-${String(i + 1).padStart(3, '0')}`,
                     item.title || '',
@@ -2841,12 +3019,13 @@ const App = {
                     item.optionsConsidered || '',
                     item.decisionMade || '',
                     this.formatDateTime24(item.raisedDate),
-                    item.description || ''
+                    item.description || '',
+                    (item.tags || []).map(v => Tags.getName(v)).join('; ')
                 ])
             },
             actions: {
                 filename: `${projName}-actions-${date}.csv`,
-                headers: ['ID','Title','Priority','Status','Owner','Due Date','Linked Item','Notes','Description'],
+                headers: ['ID','Title','Priority','Status','Owner','Due Date','Linked Item','Notes','Description','Tags'],
                 rows: () => Actions.getAll().map((item, i) => [
                     `A-${String(i + 1).padStart(3, '0')}`,
                     item.title || '',
@@ -2856,7 +3035,8 @@ const App = {
                     item.dueDate ? this.formatDateTime24(item.dueDate) : '',
                     item.linkedItem || '',
                     item.notes || '',
-                    item.description || ''
+                    item.description || '',
+                    (item.tags || []).map(v => Tags.getName(v)).join('; ')
                 ])
             },
             communications: {
@@ -3068,6 +3248,17 @@ const App = {
             return created.value;
         };
 
+        const resolveTags = (tagsRaw) => {
+            if (!tagsRaw) return [];
+            return tagsRaw.split(/[;,]/).map(s => s.trim()).filter(Boolean).map(name => {
+                const tags = Tags.getAll();
+                const match = tags.find(t => t.name.toLowerCase() === name.toLowerCase());
+                if (match) return match.value;
+                const created = Tags.add(name, '#6b7280');
+                return created.value;
+            });
+        };
+
         // Helper: find or auto-create a resource by name, return its id
         const resolveResource = (nameRaw) => {
             if (!nameRaw) return '';
@@ -3113,7 +3304,8 @@ const App = {
                     actualEnd: this._csvParseDate(col(row, 'Actual End')) || null,
                     milestone: col(row, 'Milestone').toLowerCase() === 'yes',
                     description: col(row, 'Description') || '',
-                    dependencies: []
+                    dependencies: [],
+                    tags: resolveTags(col(row, 'Tags'))
                 };
                 // Duration: parse HH:MM:SS if present
                 const durRaw = col(row, 'Duration (HH:MM:SS)') || col(row, 'Duration');
@@ -3186,7 +3378,8 @@ const App = {
                     mitigation: col(row, 'Mitigation') || '',
                     owner: resolveResource(col(row, 'Owner')),
                     status: col(row, 'Status') || 'open',
-                    createdAt: this._csvParseDate(col(row, 'Created')) || new Date().toISOString()
+                    createdAt: this._csvParseDate(col(row, 'Created')) || new Date().toISOString(),
+                    tags: resolveTags(col(row, 'Tags'))
                 });
                 count++;
             });
@@ -3204,7 +3397,8 @@ const App = {
                     raisedDate: this._csvParseDate(col(row, 'Raised Date')),
                     dueDate: this._csvParseDate(col(row, 'Due Date')),
                     resolution: col(row, 'Resolution') || '',
-                    description: col(row, 'Description') || ''
+                    description: col(row, 'Description') || '',
+                    tags: resolveTags(col(row, 'Tags'))
                 });
                 count++;
             });
@@ -3220,7 +3414,8 @@ const App = {
                     optionsConsidered: col(row, 'Options Considered') || '',
                     decisionMade: col(row, 'Decision Made') || '',
                     raisedDate: this._csvParseDate(col(row, 'Raised Date')),
-                    description: col(row, 'Description') || ''
+                    description: col(row, 'Description') || '',
+                    tags: resolveTags(col(row, 'Tags'))
                 });
                 count++;
             });
@@ -3236,7 +3431,8 @@ const App = {
                     dueDate: this._csvParseDate(col(row, 'Due Date')),
                     linkedItem: col(row, 'Linked Item') || '',
                     notes: col(row, 'Notes') || '',
-                    description: col(row, 'Description') || ''
+                    description: col(row, 'Description') || '',
+                    tags: resolveTags(col(row, 'Tags'))
                 });
                 count++;
             });
@@ -3564,6 +3760,38 @@ const App = {
         );
     },
 
+    populateTagCheckboxes(containerId, selectedValues = []) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const tags = Tags.getAll();
+        if (tags.length === 0) {
+            container.innerHTML = '<span class="help-text">No tags defined. Add tags in Settings.</span>';
+            return;
+        }
+        container.innerHTML = tags.map(t => {
+            const checked = selectedValues.includes(t.value) ? 'checked' : '';
+            return `<label class="tag-checkbox-label">
+                <input type="checkbox" value="${escapeHtml(t.value)}" ${checked}>
+                <span class="tag-mini-badge" style="background:${escapeHtml(t.color)};">${escapeHtml(t.name)}</span>
+            </label>`;
+        }).join('');
+    },
+
+    getSelectedTags(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return [];
+        return [...container.querySelectorAll('input[type="checkbox"]:checked')].map(cb => cb.value);
+    },
+
+    renderTagBadges(tagsArray) {
+        if (!tagsArray || tagsArray.length === 0) return '';
+        return tagsArray.map(v => {
+            const tag = Tags.getByValue(v);
+            if (!tag) return '';
+            return `<span class="tag-badge" style="background:${escapeHtml(tag.color)}20;color:${escapeHtml(tag.color)};border:1px solid ${escapeHtml(tag.color)}40;">${escapeHtml(tag.name)}</span>`;
+        }).join(' ');
+    },
+
     // Filter bar helpers — preserve current selection across re-renders
     populateCategoryFilterDropdown() {
         this._msfRebuildOptions('taskCategoryFilter',
@@ -3583,6 +3811,12 @@ const App = {
                 .map(r => ({ value: r.id, label: `${r.name} (${r.role})` }))
         ];
         this._msfRebuildOptions('taskAssigneeFilter', opts);
+    },
+
+    populateTagFilterDropdown(filterId) {
+        this._msfRebuildOptions(filterId,
+            Tags.getAll().map(t => ({ value: t.value, label: t.name }))
+        );
     },
 
     populateTaskDependencyDropdown(currentTaskId, selectedIds = []) {
@@ -3781,6 +4015,68 @@ const App = {
                 const swatch = row.querySelector('.color-swatch');
                 const name = nameInput.value.trim();
                 if (name) IssueCategories.update(id, name, e.target.value);
+                if (swatch) swatch.style.backgroundColor = e.target.value;
+            };
+        });
+    },
+
+    renderTagsList() {
+        const tags = Tags.getAll();
+        const html = tags.map(t => `
+            <div class="phase-item" data-id="${escapeHtml(t.id)}">
+                <span class="phase-order color-swatch" style="background-color:${escapeHtml(t.color)};"></span>
+                <input type="text" class="phase-name-input tag-name-input" value="${escapeHtml(t.name)}" data-id="${escapeHtml(t.id)}">
+                <input type="color" class="tag-color-input" value="${escapeHtml(t.color)}" data-id="${escapeHtml(t.id)}">
+                <button class="btn-icon delete-tag-btn" data-id="${escapeHtml(t.id)}" title="Delete">🗑️</button>
+            </div>
+        `).join('');
+        document.getElementById('tagsList').innerHTML = html || '<p class="empty-text">No tags defined</p>';
+    },
+
+    bindTagActions() {
+        const addBtn = document.getElementById('addTagBtn');
+        addBtn.onclick = () => {
+            const nameInput = document.getElementById('newTagName');
+            const colorInput = document.getElementById('newTagColor');
+            const name = nameInput.value.trim();
+            if (name) {
+                Tags.add(name, colorInput.value);
+                nameInput.value = '';
+                colorInput.value = '#6b7280';
+                this.renderTagsList();
+                this.bindTagActions();
+            }
+        };
+
+        document.querySelectorAll('.delete-tag-btn').forEach(btn => {
+            btn.onclick = (e) => {
+                const id = e.target.closest('[data-id]').dataset.id;
+                if (confirm('Delete this tag? Records using it will keep the old slug reference.')) {
+                    Tags.delete(id);
+                    this.renderTagsList();
+                    this.bindTagActions();
+                }
+            };
+        });
+
+        document.querySelectorAll('.tag-name-input').forEach(input => {
+            input.onblur = (e) => {
+                const id = e.target.dataset.id;
+                const name = e.target.value.trim();
+                const row = e.target.closest('.phase-item');
+                const colorInput = row.querySelector('.tag-color-input');
+                if (name) Tags.update(id, name, colorInput.value);
+            };
+        });
+
+        document.querySelectorAll('.tag-color-input').forEach(input => {
+            input.onchange = (e) => {
+                const id = e.target.dataset.id;
+                const row = e.target.closest('.phase-item');
+                const nameInput = row.querySelector('.tag-name-input');
+                const swatch = row.querySelector('.color-swatch');
+                const name = nameInput.value.trim();
+                if (name) Tags.update(id, name, e.target.value);
                 if (swatch) swatch.style.backgroundColor = e.target.value;
             };
         });

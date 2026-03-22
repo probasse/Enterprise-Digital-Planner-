@@ -729,6 +729,7 @@ const Reports = {
                             <th>Status</th>
                             <th>Time in Current Status</th>
                             <th>Total Age</th>
+                            <th>Tags</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -750,12 +751,13 @@ const Reports = {
                     <td><span class="status-badge ${escapeHtml(risk.status)}">${escapeHtml(risk.status)}</span></td>
                     <td>${currentDuration ? escapeHtml(currentDuration.durationLabel) : '-'}</td>
                     <td>${escapeHtml(totalLabel)}</td>
+                    <td>${(risk.tags || []).map(v => { const tag = Tags.getByValue(v); return tag ? '<span style="background:' + escapeHtml(tag.color) + '20;color:' + escapeHtml(tag.color) + ';padding:2px 6px;border-radius:3px;font-size:0.7rem;">' + escapeHtml(tag.name) + '</span>' : ''; }).join(' ') || '-'}</td>
                 </tr>
             `;
         });
 
         if (risks.length === 0) {
-            content += '<tr><td colspan="9" style="text-align: center;">No risks identified</td></tr>';
+            content += '<tr><td colspan="10" style="text-align: center;">No risks identified</td></tr>';
         }
 
         content += `
@@ -812,7 +814,7 @@ const Reports = {
         }
 
         const csvRows = [
-            ['ID','Description','Severity','Probability','Impact','Owner','Status','Mitigation'],
+            ['ID','Description','Severity','Probability','Impact','Owner','Status','Mitigation','Tags'],
             ...risks.map((risk, idx) => [
                 'R-' + String(idx + 1).padStart(3, '0'),
                 risk.description,
@@ -821,7 +823,8 @@ const Reports = {
                 risk.impact || '',
                 Resources.getName(risk.owner),
                 risk.status,
-                risk.mitigation || ''
+                risk.mitigation || '',
+                (risk.tags || []).map(v => Tags.getName(v)).join('; ')
             ])
         ];
         return { title: 'Risk Assessment', content, csv: csvRows };
@@ -1207,6 +1210,7 @@ ${escapeHtml(comm.template)}
                             <th>Owner</th>
                             <th>Raised</th>
                             <th>Resolution</th>
+                            <th>Tags</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1230,12 +1234,13 @@ ${escapeHtml(comm.template)}
                     <td>${escapeHtml(Resources.getName(item.owner))}</td>
                     <td>${this.fmt24(item.raisedDate)}</td>
                     <td>${escapeHtml(item.resolution || '-')}</td>
+                    <td>${(item.tags || []).map(v => { const tag = Tags.getByValue(v); return tag ? '<span style="background:' + escapeHtml(tag.color) + '20;color:' + escapeHtml(tag.color) + ';padding:2px 6px;border-radius:3px;font-size:0.7rem;">' + escapeHtml(tag.name) + '</span>' : ''; }).join(' ') || '-'}</td>
                 </tr>
             `;
         });
 
         if (items.length === 0) {
-            content += '<tr><td colspan="10" style="text-align:center;">No issues logged</td></tr>';
+            content += '<tr><td colspan="11" style="text-align:center;">No issues logged</td></tr>';
         }
 
         content += `
@@ -1271,7 +1276,7 @@ ${escapeHtml(comm.template)}
         }
 
         const csvRowsIssues = [
-            ['ID','Title','Category','Priority','Status','Owner','Raised','Resolution'],
+            ['ID','Title','Category','Priority','Status','Owner','Raised','Resolution','Tags'],
             ...items.map((item, idx) => [
                 'I-' + String(idx + 1).padStart(3, '0'),
                 item.title,
@@ -1280,7 +1285,8 @@ ${escapeHtml(comm.template)}
                 item.status,
                 Resources.getName(item.owner),
                 this.fmt24(item.raisedDate),
-                item.resolution || ''
+                item.resolution || '',
+                (item.tags || []).map(v => Tags.getName(v)).join('; ')
             ])
         ];
         return { title: 'Issues Register', content, csv: csvRowsIssues };
@@ -1338,6 +1344,7 @@ ${escapeHtml(comm.template)}
                             <th>Decided By</th>
                             <th>Impact</th>
                             <th>Raised</th>
+                            <th>Tags</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1359,12 +1366,13 @@ ${escapeHtml(comm.template)}
                     <td>${escapeHtml(Resources.getName(item.decidedBy))}</td>
                     <td>${escapeHtml(item.impact || '-')}</td>
                     <td>${this.fmt24(item.raisedDate)}</td>
+                    <td>${(item.tags || []).map(v => { const tag = Tags.getByValue(v); return tag ? '<span style="background:' + escapeHtml(tag.color) + '20;color:' + escapeHtml(tag.color) + ';padding:2px 6px;border-radius:3px;font-size:0.7rem;">' + escapeHtml(tag.name) + '</span>' : ''; }).join(' ') || '-'}</td>
                 </tr>
             `;
         });
 
         if (items.length === 0) {
-            content += '<tr><td colspan="9" style="text-align:center;">No decisions logged</td></tr>';
+            content += '<tr><td colspan="10" style="text-align:center;">No decisions logged</td></tr>';
         }
 
         content += `
@@ -1400,7 +1408,7 @@ ${escapeHtml(comm.template)}
         }
 
         const csvRowsDecisions = [
-            ['ID','Title','Status','Decision Made','Decided By','Impact','Raised'],
+            ['ID','Title','Status','Decision Made','Decided By','Impact','Raised','Tags'],
             ...items.map((item, idx) => [
                 'D-' + String(idx + 1).padStart(3, '0'),
                 item.title,
@@ -1408,7 +1416,8 @@ ${escapeHtml(comm.template)}
                 item.decisionMade || '',
                 Resources.getName(item.decidedBy),
                 item.impact || '',
-                this.fmt24(item.raisedDate)
+                this.fmt24(item.raisedDate),
+                (item.tags || []).map(v => Tags.getName(v)).join('; ')
             ])
         ];
         return { title: 'Decision Log', content, csv: csvRowsDecisions };
@@ -1467,6 +1476,7 @@ ${escapeHtml(comm.template)}
                             <th>Owner</th>
                             <th>Due Date</th>
                             <th>Linked Item</th>
+                            <th>Tags</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1489,12 +1499,13 @@ ${escapeHtml(comm.template)}
                     <td>${escapeHtml(Resources.getName(item.owner))}</td>
                     <td${isOverdue ? ' style="color:var(--danger);font-weight:bold;"' : ''}>${item.dueDate ? this.fmt24(item.dueDate) : '-'}</td>
                     <td>${escapeHtml(item.linkedItem || '-')}</td>
+                    <td>${(item.tags || []).map(v => { const tag = Tags.getByValue(v); return tag ? '<span style="background:' + escapeHtml(tag.color) + '20;color:' + escapeHtml(tag.color) + ';padding:2px 6px;border-radius:3px;font-size:0.7rem;">' + escapeHtml(tag.name) + '</span>' : ''; }).join(' ') || '-'}</td>
                 </tr>
             `;
         });
 
         if (items.length === 0) {
-            content += '<tr><td colspan="9" style="text-align:center;">No actions created</td></tr>';
+            content += '<tr><td colspan="10" style="text-align:center;">No actions created</td></tr>';
         }
 
         content += `
@@ -1530,7 +1541,7 @@ ${escapeHtml(comm.template)}
         }
 
         const csvRowsActions = [
-            ['ID','Title','Priority','Status','Owner','Due Date','Linked Item'],
+            ['ID','Title','Priority','Status','Owner','Due Date','Linked Item','Tags'],
             ...items.map((item, idx) => [
                 'A-' + String(idx + 1).padStart(3, '0'),
                 item.title,
@@ -1538,7 +1549,8 @@ ${escapeHtml(comm.template)}
                 item.status,
                 Resources.getName(item.owner),
                 item.dueDate ? this.fmt24(item.dueDate) : '',
-                item.linkedItem || ''
+                item.linkedItem || '',
+                (item.tags || []).map(v => Tags.getName(v)).join('; ')
             ])
         ];
         return { title: 'Actions Register', content, csv: csvRowsActions };

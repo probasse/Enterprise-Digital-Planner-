@@ -164,7 +164,8 @@
       "dependencies": [],
       "milestone": true,
       "description": "Lock all business configuration changes in P01. No config transports allowed after this point. Confirm with all functional streams.",
-      "taskNumber": "T-001"
+      "taskNumber": "T-001",
+      "tags": ["go-live-critical"]
     },
     {
       "id": "t02",
@@ -222,7 +223,8 @@
       "dependencies": [],
       "milestone": false,
       "description": "Validate RISE Cloud Private Edition tenant for P01 is fully provisioned. Check VPN/Private Link, DNS resolution and RFC connectivity from on-premise systems.",
-      "taskNumber": "T-005"
+      "taskNumber": "T-005",
+      "tags": ["sap-basis", "security"]
     },
     {
       "id": "t06",
@@ -296,7 +298,8 @@
       ],
       "milestone": true,
       "description": "Formal go/no-go decision with business and IT steering committee. All checklist items must be GREEN.",
-      "taskNumber": "T-010"
+      "taskNumber": "T-010",
+      "tags": ["go-live-critical"]
     },
     {
       "id": "t11",
@@ -1079,7 +1082,8 @@
       "statusHistory": [
         { "status": "open",        "enteredAt": "2026-03-05T09:00:00.000Z" },
         { "status": "in-progress", "enteredAt": "2026-03-06T08:30:00.000Z" }
-      ]
+      ],
+      "tags": ["sap-basis", "go-live-critical"]
     },
     {
       "id": "iss02",
@@ -1376,5 +1380,11 @@
     { "id": "ic05", "name": "Operational", "color": "#16a34a", "value": "operational" },
     { "id": "ic06", "name": "Resource",    "color": "#d97706", "value": "resource" },
     { "id": "ic07", "name": "Other",       "color": "#6b7280", "value": "other" }
+  ],
+  "tags": [
+    { "id": "tag01", "name": "Go-Live Critical", "color": "#dc2626", "value": "go-live-critical" },
+    { "id": "tag02", "name": "SAP Basis",        "color": "#2563eb", "value": "sap-basis" },
+    { "id": "tag03", "name": "Data Migration",   "color": "#ea580c", "value": "data-migration" },
+    { "id": "tag04", "name": "Security",         "color": "#7c3aed", "value": "security" }
   ]
 }

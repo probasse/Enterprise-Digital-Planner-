@@ -58,6 +58,7 @@ const Storage = {
             DECISIONS_COL_WIDTHS:        `${ns}_decisions_col_widths`,
             ACTIONS_COL_WIDTHS:          `${ns}_actions_col_widths`,
             ISSUE_CATEGORIES: `${ns}_issue_categories`,
+            TAGS:             `${ns}_tags`,
             LOCKED:           `${ns}_locked`,
             SETTINGS:         `${ns}_settings`
         };
@@ -116,7 +117,7 @@ const Storage = {
         const dataSuffixes = [
             '_tasks', '_resources', '_risks', '_rollback', '_gonogo',
             '_communications', '_task_seq', '_categories', '_statuses',
-            '_issues', '_decisions', '_actions', '_issue_categories'
+            '_issues', '_decisions', '_actions', '_issue_categories', '_tags'
         ];
         dataSuffixes.forEach(suffix => {
             const raw = localStorage.getItem(sourceNs + suffix);
@@ -357,6 +358,7 @@ const Storage = {
             decisions: this.get(this.KEYS.DECISIONS),
             actions: this.get(this.KEYS.ACTIONS),
             issueCategories: this.get(this.KEYS.ISSUE_CATEGORIES),
+            tags: this.get(this.KEYS.TAGS),
             timezone: this.get(this.KEYS.TIMEZONE),
             locked: this.get(this.KEYS.LOCKED)
         };
@@ -392,6 +394,7 @@ const Storage = {
             if (data.decisions) this.set(this.KEYS.DECISIONS, data.decisions);
             if (data.actions) this.set(this.KEYS.ACTIONS, data.actions);
             if (data.issueCategories) this.set(this.KEYS.ISSUE_CATEGORIES, data.issueCategories);
+            if (data.tags) this.set(this.KEYS.TAGS, data.tags);
             if (data.timezone != null) this.set(this.KEYS.TIMEZONE, data.timezone);
             if (data.locked != null)   this.set(this.KEYS.LOCKED, data.locked);
 

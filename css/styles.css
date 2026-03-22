@@ -602,11 +602,78 @@ a:hover {
     color: var(--text-secondary);
 }
 
+.stat-card-clickable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.effort-unit-hint {
+    font-size: 0.7rem;
+    opacity: 0.7;
+}
+
 .dashboard-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
     gap: 24px;
     margin-bottom: 24px;
+}
+
+.dashboard-row-3col {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+/* IDA Summary Cards */
+.ida-summary-card h3 {
+    margin-bottom: 12px;
+}
+
+.ida-total {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.ida-stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 0.82rem;
+}
+
+.ida-stat-label {
+    min-width: 80px;
+    color: var(--text-secondary);
+}
+
+.ida-stat-bar-wrap {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.ida-stat-bar {
+    display: block;
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.ida-stat-bar.warning  { background: var(--warning); }
+.ida-stat-bar.info     { background: var(--info); }
+.ida-stat-bar.success  { background: var(--success); }
+.ida-stat-bar.danger   { background: var(--danger); }
+.ida-stat-bar.muted    { background: var(--text-muted); }
+
+.ida-stat-count {
+    min-width: 20px;
+    text-align: right;
+    font-weight: 600;
+    color: var(--text-primary);
 }
 
 .card {
@@ -796,6 +863,11 @@ a:hover {
     margin-top: 4px;
 }
 
+.activity-details {
+    color: var(--text-secondary);
+    margin-left: 4px;
+}
+
 /* ==========================================
    Tables
    ========================================== */
@@ -917,6 +989,17 @@ a:hover {
     text-transform: uppercase;
 }
 
+.status-cycle-btn {
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.15s, transform 0.1s;
+}
+
+.status-cycle-btn:hover {
+    opacity: 0.8;
+    transform: scale(1.05);
+}
+
 .status-badge.not-started {
     background: var(--bg-tertiary);
     color: var(--text-secondary);
@@ -1022,6 +1105,56 @@ a:hover {
     display: inline-block;
     padding: 4px 10px;
     border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+}
+
+/* Tag badges (inline in table cells and reports) */
+.tag-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 500;
+    white-space: nowrap;
+    margin: 1px 2px;
+}
+
+.cell-tags {
+    margin-top: 2px;
+}
+
+/* Tag checkbox container in modals */
+.tag-checkboxes-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    min-height: 36px;
+    max-height: 120px;
+    overflow-y: auto;
+    background: var(--bg-primary);
+}
+
+.tag-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+}
+
+.tag-checkbox-label input[type="checkbox"] {
+    margin: 0;
+}
+
+.tag-mini-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 3px;
+    color: #fff;
     font-size: 0.75rem;
     font-weight: 500;
 }
@@ -1972,6 +2105,34 @@ a:hover {
 
 .btn-danger:hover {
     background: #dc2626;
+}
+
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    line-height: 1;
+    transition: all 0.15s ease;
+    opacity: 0.65;
+}
+
+.btn-icon:hover {
+    opacity: 1;
+    background: var(--danger-bg, #fef2f2);
+    border-color: var(--danger);
+    transform: scale(1.1);
+}
+
+.btn-icon:active {
+    transform: scale(0.95);
 }
 
 /* ==========================================

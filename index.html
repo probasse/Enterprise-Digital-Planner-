@@ -50,15 +50,15 @@
                     <span class="nav-text">Communication</span>
                 </li>
                 <li class="nav-item" data-view="issues">
-                    <span class="nav-icon">🔴</span>
+                    <span class="nav-icon">🐛</span>
                     <span class="nav-text">Issues</span>
                 </li>
                 <li class="nav-item" data-view="decisions">
-                    <span class="nav-icon">🟡</span>
+                    <span class="nav-icon">🧭</span>
                     <span class="nav-text">Decisions</span>
                 </li>
                 <li class="nav-item" data-view="actions">
-                    <span class="nav-icon">🟢</span>
+                    <span class="nav-icon">🔧</span>
                     <span class="nav-text">Actions</span>
                 </li>
                 <li class="nav-item" data-view="reports">
@@ -146,6 +146,13 @@
                             <span class="stat-label">Go/No-Go</span>
                         </div>
                     </div>
+                    <div class="stat-card info stat-card-clickable" onclick="App.cycleEffortUnit()" title="Click to toggle unit">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-info">
+                            <span class="stat-value" id="remainingEffort">--</span>
+                            <span class="stat-label">Remaining Effort <span class="effort-unit-hint" id="effortUnitHint"></span></span>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="dashboard-row">
@@ -192,6 +199,21 @@
                         </ul>
                     </div>
                 </div>
+
+                <div class="dashboard-row dashboard-row-3col">
+                    <div class="card ida-summary-card">
+                        <h3>🐛 Issues</h3>
+                        <div class="ida-summary" id="issueSummary"></div>
+                    </div>
+                    <div class="card ida-summary-card">
+                        <h3>🧭 Decisions</h3>
+                        <div class="ida-summary" id="decisionSummary"></div>
+                    </div>
+                    <div class="card ida-summary-card">
+                        <h3>🔧 Actions</h3>
+                        <div class="ida-summary" id="actionSummary"></div>
+                    </div>
+                </div>
             </section>
 
             <!-- Tasks View -->
@@ -202,6 +224,7 @@
                         <div class="msf-wrap" id="taskStatusFilter"></div>
                         <div class="msf-wrap" id="taskPriorityFilter"></div>
                         <div class="msf-wrap" id="taskAssigneeFilter"></div>
+                        <div class="msf-wrap" id="taskTagFilter"></div>
                     </div>
                     <span class="tasks-total-duration" id="tasksTotalDuration" title="Click to see breakdown by category" onclick="App.showDurationBreakdown()"></span>
                     <button class="btn-primary" id="addTaskBtn">+ Add Task</button>
@@ -332,6 +355,7 @@
                     <div class="view-filters">
                         <div class="msf-wrap" id="riskSeverityFilter"></div>
                         <div class="msf-wrap" id="riskStatusFilter"></div>
+                        <div class="msf-wrap" id="riskTagFilter"></div>
                     </div>
                     <button class="btn-primary" id="addRiskBtn">+ Add Risk</button>
                     <button class="btn-secondary" data-export-csv="risks">📊 Export CSV</button>
@@ -482,6 +506,7 @@
                     <div class="msf-wrap" id="issueStatusFilter"></div>
                     <div class="msf-wrap" id="issuePriorityFilter"></div>
                     <div class="msf-wrap" id="issueCategoryFilter"></div>
+                    <div class="msf-wrap" id="issueTagFilter"></div>
                 </div>
                 <div class="data-table-container">
                     <table class="data-table" id="issuesTable">
@@ -513,6 +538,7 @@
                 </div>
                 <div class="filters-bar">
                     <div class="msf-wrap" id="decisionStatusFilter"></div>
+                    <div class="msf-wrap" id="decisionTagFilter"></div>
                 </div>
                 <div class="data-table-container">
                     <table class="data-table" id="decisionsTable">
@@ -544,6 +570,7 @@
                 <div class="filters-bar">
                     <div class="msf-wrap" id="actionStatusFilter"></div>
                     <div class="msf-wrap" id="actionPriorityFilter"></div>
+                    <div class="msf-wrap" id="actionTagFilter"></div>
                 </div>
                 <div class="data-table-container">
                     <table class="data-table" id="actionsTable">
@@ -758,6 +785,10 @@
                             Mark as Milestone
                         </label>
                     </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <div class="tag-checkboxes-container" id="taskTagCheckboxes"></div>
+                    </div>
                     <!-- Status history — rendered by app.js when editing an existing task -->
                     <div id="taskStatusHistory" style="display:none;">
                         <div class="form-section-label">Status History</div>
@@ -881,6 +912,10 @@
                             <option value="mitigated">Mitigated</option>
                             <option value="closed">Closed</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <div class="tag-checkboxes-container" id="riskTagCheckboxes"></div>
                     </div>
                     <!-- Status history — rendered by app.js when editing an existing risk -->
                     <div id="riskStatusHistory" style="display:none;">
@@ -1094,6 +1129,10 @@
                         <label for="issueResolution">Resolution</label>
                         <textarea id="issueResolution" rows="2" placeholder="How was the issue resolved?"></textarea>
                     </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <div class="tag-checkboxes-container" id="issueTagCheckboxes"></div>
+                    </div>
                     <!-- Status history — rendered by app.js when editing an existing issue -->
                     <div id="issueStatusHistory" style="display:none;">
                         <div class="form-section-label">Status History</div>
@@ -1154,6 +1193,10 @@
                     <div class="form-group">
                         <label for="decisionImpact">Impact</label>
                         <textarea id="decisionImpact" rows="2" placeholder="What is the impact of this decision?"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <div class="tag-checkboxes-container" id="decisionTagCheckboxes"></div>
                     </div>
                     <!-- Status history — rendered by app.js when editing an existing decision -->
                     <div id="decisionStatusHistory" style="display:none;">
@@ -1225,6 +1268,10 @@
                     <div class="form-group">
                         <label for="actionNotes">Notes</label>
                         <textarea id="actionNotes" rows="2" placeholder="Additional notes"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Tags</label>
+                        <div class="tag-checkboxes-container" id="actionTagCheckboxes"></div>
                     </div>
                     <!-- Status history — rendered by app.js when editing an existing action -->
                     <div id="actionStatusHistory" style="display:none;">
@@ -1314,6 +1361,19 @@
                             <input type="text" id="newIssueCategoryName" placeholder="Category name">
                             <input type="color" id="newIssueCategoryColor" value="#6b7280" title="Badge color">
                             <button type="button" class="btn-secondary" id="addIssueCategoryBtn">+ Add</button>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3>🏷️ Tags</h3>
+                        <p class="help-text">Define tags that can be applied to tasks, issues, decisions, actions, and risks. Pick a color for each tag badge.</p>
+                        <div class="phases-list" id="tagsList">
+                            <!-- Tags will be rendered here -->
+                        </div>
+                        <div class="add-phase-form">
+                            <input type="text" id="newTagName" placeholder="Tag name">
+                            <input type="color" id="newTagColor" value="#6b7280" title="Tag color">
+                            <button type="button" class="btn-secondary" id="addTagBtn">+ Add</button>
                         </div>
                     </div>
                     <div class="form-section">
