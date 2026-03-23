@@ -1119,7 +1119,16 @@ const Storage = {
                 statuses: `${ns}_statuses`, issues: `${ns}_issues`, decisions: `${ns}_decisions`,
                 actions: `${ns}_actions`, issue_categories: `${ns}_issue_categories`,
                 tags: `${ns}_tags`, task_seq: `${ns}_task_seq`, timezone: `${ns}_timezone`,
-                locked: `${ns}_locked`, activity: `${ns}_activity`, settings: `${ns}_settings`
+                locked: `${ns}_locked`, activity: `${ns}_activity`, settings: `${ns}_settings`,
+                task_columns: `${ns}_task_columns`, task_name_wrap: `${ns}_task_name_wrap`,
+                task_column_order: `${ns}_task_column_order`, resources_col_order: `${ns}_resources_col_order`,
+                risks_col_order: `${ns}_risks_col_order`, communication_col_order: `${ns}_communication_col_order`,
+                issues_col_order: `${ns}_issues_col_order`, decisions_col_order: `${ns}_decisions_col_order`,
+                actions_col_order: `${ns}_actions_col_order`,
+                tasks_col_widths: `${ns}_tasks_col_widths`, resources_col_widths: `${ns}_resources_col_widths`,
+                risks_col_widths: `${ns}_risks_col_widths`, communication_col_widths: `${ns}_communication_col_widths`,
+                issues_col_widths: `${ns}_issues_col_widths`, decisions_col_widths: `${ns}_decisions_col_widths`,
+                actions_col_widths: `${ns}_actions_col_widths`
             };
         };
 
@@ -1164,7 +1173,16 @@ const Storage = {
                     statuses: `${ns}_statuses`, issues: `${ns}_issues`, decisions: `${ns}_decisions`,
                     actions: `${ns}_actions`, issue_categories: `${ns}_issue_categories`,
                     tags: `${ns}_tags`, task_seq: `${ns}_task_seq`, timezone: `${ns}_timezone`,
-                    locked: `${ns}_locked`, activity: `${ns}_activity`, settings: `${ns}_settings`
+                    locked: `${ns}_locked`, activity: `${ns}_activity`, settings: `${ns}_settings`,
+                    task_columns: `${ns}_task_columns`, task_name_wrap: `${ns}_task_name_wrap`,
+                    task_column_order: `${ns}_task_column_order`, resources_col_order: `${ns}_resources_col_order`,
+                    risks_col_order: `${ns}_risks_col_order`, communication_col_order: `${ns}_communication_col_order`,
+                    issues_col_order: `${ns}_issues_col_order`, decisions_col_order: `${ns}_decisions_col_order`,
+                    actions_col_order: `${ns}_actions_col_order`,
+                    tasks_col_widths: `${ns}_tasks_col_widths`, resources_col_widths: `${ns}_resources_col_widths`,
+                    risks_col_widths: `${ns}_risks_col_widths`, communication_col_widths: `${ns}_communication_col_widths`,
+                    issues_col_widths: `${ns}_issues_col_widths`, decisions_col_widths: `${ns}_decisions_col_widths`,
+                    actions_col_widths: `${ns}_actions_col_widths`
                 };
                 Object.entries(fm).forEach(([field, lsKey]) => {
                     if (data[field] !== undefined) {
@@ -1189,7 +1207,12 @@ const Storage = {
         const data = {};
         const fields = ['project','tasks','resources','risks','rollback','gonogo',
             'communications','categories','statuses','issues','decisions','actions',
-            'issue_categories','tags','task_seq','timezone','locked','activity','settings'];
+            'issue_categories','tags','task_seq','timezone','locked','activity','settings',
+            'task_columns','task_name_wrap',
+            'task_column_order','resources_col_order','risks_col_order',
+            'communication_col_order','issues_col_order','decisions_col_order','actions_col_order',
+            'tasks_col_widths','resources_col_widths','risks_col_widths',
+            'communication_col_widths','issues_col_widths','decisions_col_widths','actions_col_widths'];
         fields.forEach(f => {
             const raw = localStorage.getItem(`${ns}_${f}`);
             if (raw !== null) { try { data[f] = JSON.parse(raw); } catch(e) {} }

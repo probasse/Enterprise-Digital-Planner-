@@ -4365,7 +4365,12 @@ const App = {
                 const ns = `cutover_${pid}`;
                 const fields = ['project','tasks','resources','risks','rollback','gonogo',
                     'communications','categories','statuses','issues','decisions','actions',
-                    'issue_categories','tags','task_seq','timezone','locked','activity','settings'];
+                    'issue_categories','tags','task_seq','timezone','locked','activity','settings',
+                    'task_columns','task_name_wrap',
+                    'task_column_order','resources_col_order','risks_col_order',
+                    'communication_col_order','issues_col_order','decisions_col_order','actions_col_order',
+                    'tasks_col_widths','resources_col_widths','risks_col_widths',
+                    'communication_col_widths','issues_col_widths','decisions_col_widths','actions_col_widths'];
                 fields.forEach(f => {
                     if (data[f] !== undefined) localStorage.setItem(`${ns}_${f}`, JSON.stringify(data[f]));
                 });
