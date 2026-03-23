@@ -4428,11 +4428,37 @@ const App = {
                 if (pullBtn) pullBtn.style.display = '';
                 if (statusEl) statusEl.textContent = 'Signed in as ' + (user.email || user.displayName);
                 this._updateSyncBadge('syncing');
-                const pid = Storage.getActiveProjectId();
-                if (pid) {
-                    await Storage._initialSync(pid);
-                    Storage._syncProjectRegistry();
+
+                // Pull project registry from cloud first — cloud is source of truth
+                try {
+                    const regSnap = await Storage._db.collection('projectRegistry').doc('registry').get();
+                    if (regSnap.exists && regSnap.data()?.projects?.length) {
+                        const cloudProjects = regSnap.data().projects;
+                        // Replace local registry and switch to first cloud project
+                        Storage.set(Storage.GLOBAL_KEYS.PROJECTS, cloudProjects);
+                        const currentPid = Storage.getActiveProjectId();
+                        const pidExists = cloudProjects.some(p => p.id === currentPid);
+                        if (!pidExists) {
+                            // Local project ID doesn't exist in cloud — switch to first cloud project
+                            Storage.setActiveProject(cloudProjects[0].id);
+                        }
+                        const pid = Storage.getActiveProjectId();
+                        await Storage._initialSync(pid);
+                    } else {
+                        // Cloud registry empty — push local data up
+                        const pid = Storage.getActiveProjectId();
+                        if (pid) {
+                            await Storage._pushAllToFirestore(pid);
+                            Storage._syncProjectRegistry();
+                        }
+                    }
+                } catch (err) {
+                    console.error('Registry sync error:', err);
+                    // Fallback: sync current project
+                    const pid = Storage.getActiveProjectId();
+                    if (pid) await Storage._initialSync(pid);
                 }
+
                 this._updateSyncBadge('online');
                 this.reloadApp();
             } else {
