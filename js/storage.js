@@ -1152,7 +1152,8 @@ const Storage = {
         if (!docRef) return;
         try {
             const snapshot = await docRef.get();
-            if (snapshot.exists && snapshot.data()?.project) {
+            if (snapshot.exists && snapshot.data()?.tasks) {
+                // Firestore has meaningful data — pull it to localStorage
                 const data = snapshot.data();
                 this._suppressSync = true;
                 const ns = `cutover_${projectId}`;
@@ -1172,6 +1173,7 @@ const Storage = {
                 });
                 this._suppressSync = false;
             } else {
+                // Firestore empty or missing real data — push localStorage up
                 await this._pushAllToFirestore(projectId);
             }
             this._attachProjectListener(projectId);

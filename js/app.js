@@ -3047,6 +3047,8 @@ const App = {
         document.getElementById('fbSignUp')?.addEventListener('click', () => this.fbSignUp());
         document.getElementById('fbGoogleSignIn')?.addEventListener('click', () => this.fbGoogleSignIn());
         document.getElementById('fbSignOut')?.addEventListener('click', () => this.fbSignOut());
+        document.getElementById('fbPushToCloud')?.addEventListener('click', () => this.fbPushToCloud());
+        document.getElementById('fbPullFromCloud')?.addEventListener('click', () => this.fbPullFromCloud());
 
         // Modal close buttons
         document.querySelectorAll('.modal-close, .modal-cancel').forEach(btn => {
@@ -4327,6 +4329,60 @@ const App = {
         } catch (e) { alert('Sign out failed: ' + e.message); }
     },
 
+    async fbPushToCloud() {
+        if (!Storage._firestoreReady || !Storage._auth?.currentUser) {
+            alert('Not connected or not signed in.');
+            return;
+        }
+        if (!confirm('Push all local data to Firestore? This will overwrite any existing cloud data for this project.')) return;
+        this._updateSyncBadge('syncing');
+        try {
+            const pid = Storage.getActiveProjectId();
+            await Storage._pushAllToFirestore(pid);
+            Storage._syncProjectRegistry();
+            this._updateSyncBadge('online');
+            alert('All data pushed to Firestore successfully!');
+        } catch (e) {
+            this._updateSyncBadge('online');
+            alert('Push failed: ' + e.message);
+        }
+    },
+
+    async fbPullFromCloud() {
+        if (!Storage._firestoreReady || !Storage._auth?.currentUser) {
+            alert('Not connected or not signed in.');
+            return;
+        }
+        if (!confirm('Pull data from Firestore? This will overwrite your local data for this project.')) return;
+        this._updateSyncBadge('syncing');
+        try {
+            const pid = Storage.getActiveProjectId();
+            const docRef = Storage._getProjectDocRef(pid);
+            const snapshot = await docRef.get();
+            if (snapshot.exists && snapshot.data()?.tasks) {
+                const data = snapshot.data();
+                Storage._suppressSync = true;
+                const ns = `cutover_${pid}`;
+                const fields = ['project','tasks','resources','risks','rollback','gonogo',
+                    'communications','categories','statuses','issues','decisions','actions',
+                    'issue_categories','tags','task_seq','timezone','locked','activity','settings'];
+                fields.forEach(f => {
+                    if (data[f] !== undefined) localStorage.setItem(`${ns}_${f}`, JSON.stringify(data[f]));
+                });
+                Storage._suppressSync = false;
+                this._updateSyncBadge('online');
+                this.reloadApp();
+                alert('Data pulled from Firestore successfully!');
+            } else {
+                this._updateSyncBadge('online');
+                alert('No data found in Firestore for this project.');
+            }
+        } catch (e) {
+            this._updateSyncBadge('online');
+            alert('Pull failed: ' + e.message);
+        }
+    },
+
     _updateSyncBadge(status) {
         const dot = document.querySelector('#syncBadge .sync-dot');
         const label = document.getElementById('syncLabel');
@@ -4356,11 +4412,15 @@ const App = {
             const signUpBtn = document.getElementById('fbSignUp');
             const googleBtn = document.getElementById('fbGoogleSignIn');
             const statusEl = document.getElementById('fbAuthStatus');
+            const pushBtn = document.getElementById('fbPushToCloud');
+            const pullBtn = document.getElementById('fbPullFromCloud');
             if (user) {
                 if (signOutBtn) signOutBtn.style.display = '';
                 if (signInBtn) signInBtn.style.display = 'none';
                 if (signUpBtn) signUpBtn.style.display = 'none';
                 if (googleBtn) googleBtn.style.display = 'none';
+                if (pushBtn) pushBtn.style.display = '';
+                if (pullBtn) pullBtn.style.display = '';
                 if (statusEl) statusEl.textContent = 'Signed in as ' + (user.email || user.displayName);
                 this._updateSyncBadge('syncing');
                 const pid = Storage.getActiveProjectId();
@@ -4375,6 +4435,8 @@ const App = {
                 if (signInBtn) signInBtn.style.display = '';
                 if (signUpBtn) signUpBtn.style.display = '';
                 if (googleBtn) googleBtn.style.display = '';
+                if (pushBtn) pushBtn.style.display = 'none';
+                if (pullBtn) pullBtn.style.display = 'none';
                 if (statusEl) statusEl.textContent = 'Not signed in. Sign in to enable sync.';
                 this._updateSyncBadge('offline');
             }
